@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Plus, X, Home, Clock, History, Settings, Trash2, Trophy, AlertCircle, KeyRound, Loader2, Pencil, Sparkles, Lock, Flame, Target, Wallet, DollarSign } from 'lucide-react';
-
+ 
 // Chore icons — grouped by category for readability (the UI shows them in a grid)
 const EMOJI_OPTIONS = [
   // Bedroom
@@ -8,11 +8,11 @@ const EMOJI_OPTIONS = [
   // Kitchen / eating
   '🍽️', '🍴', '🥣', '🧽', '🥄', '🍎', '🥛', '🧃', '🍞', '🥗', '🍳', '🧊',
   // Cleaning
-  '🧹', '🧼', '🧴', '🗑️', '♻️', '🧻', '🪣', '🧯', '🪒',
+  '🧹', '🧼', '🧴', '🗑️', '♻️', '🧻', '🪣', '🧯', '🪒', '🚽',
   // Bathroom / self-care
   '🪥', '🚿', '🛁', '💧', '🧴',
   // Pets
-  '🐕', '🐈', '🐇', '🐟', '🦜', '🐾', '🥩',
+  '🐕', '🐈', '🐇', '🐟', '🦜', '🐾', '🥩', '💩',
   // Outdoors / garden
   '🌱', '🪴', '🌻', '🍃', '🍂', '🌳', '🌲', '🪵', '🧑‍🌾',
   // School / homework
@@ -20,16 +20,16 @@ const EMOJI_OPTIONS = [
   // Active / sports
   '⚽', '🏀', '⚾', '🎾', '🏈', '🏐', '🚲', '🛴', '🛹', '🏊', '🧘',
   // Car / chores around the house
-  '🚗', '🧰', '🔧', '🪑', '🚪', '💡', '📦',
+  '🚗', '🧰', '🔧', '🪑', '🚪', '💡', '📦', '🪟','🚙',
   // Music / fun
   '🎵', '🎹', '🎸', '🎤', '🎮',
   // Misc helpful
   '🛏️', '🧑‍🍳', '🛒', '💰', '⏰', '📅', '✅', '⭐',
 ];
-
+ 
 // De-duplicate while preserving order
 const DEDUPED_EMOJI_OPTIONS = [...new Set(EMOJI_OPTIONS)];
-
+ 
 // Kid avatars — animals and friendly faces
 const KID_AVATARS = [
   // Original favorites
@@ -41,9 +41,9 @@ const KID_AVATARS = [
   // Fun faces / characters
   '😀', '😎', '🤠', '🥳', '🤖', '👾', '👽', '👻', '🎃', '🧚', '🧙', '🦸', '🦹', '🧛',
 ];
-
+ 
 const DEDUPED_KID_AVATARS = [...new Set(KID_AVATARS)];
-
+ 
 // Parent avatars — expanded for variety
 const PARENT_AVATARS = [
   '👨', '👩', '🧔', '👱', '👨‍🦰', '👩‍🦰', '👨‍🦱', '👩‍🦱',
@@ -51,9 +51,9 @@ const PARENT_AVATARS = [
   '👨‍💼', '👩‍💼', '👨‍⚕️', '👩‍⚕️', '👨‍🏫', '👩‍🏫', '👨‍🍳', '👩‍🍳',
   '👨‍🌾', '👩‍🌾', '🦸‍♂️', '🦸‍♀️',
 ];
-
+ 
 const DEDUPED_PARENT_AVATARS = [...new Set(PARENT_AVATARS)];
-
+ 
 // Cadences for chores — labels used in both dropdowns and in the Extras section headers
 const CADENCE_OPTIONS = [
   { value: 'daily',    label: 'Daily',          short: 'daily' },
@@ -61,7 +61,7 @@ const CADENCE_OPTIONS = [
   { value: 'biweekly', label: 'Every 2 weeks',  short: 'biweekly' },
   { value: 'monthly',  label: 'Monthly',        short: 'monthly' },
 ];
-
+ 
 // Header text for each cadence group in the Extras section
 const CADENCE_LABELS = {
   daily:    'Every day · resets tomorrow',
@@ -70,9 +70,9 @@ const CADENCE_LABELS = {
   monthly:  'Once a month · resets the 1st',
 };
 const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316'];
-
+ 
 const todayStr = () => new Date().toISOString().split('T')[0];
-
+ 
 // ============ API CLIENT ============
 const api = {
   getFamily: () => fetch('/api/family').then(r => r.json()),
@@ -94,8 +94,11 @@ const api = {
   removeGoal: (id) => fetch(`/api/goals/${id}`, { method: 'DELETE' }),
   addPayout: (data) => fetch('/api/payouts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
   removePayout: (id) => fetch(`/api/payouts/${id}`, { method: 'DELETE' }),
+  addCustomCompletion: (data) => fetch('/api/custom-completions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  updateCustomCompletion: (id, data) => fetch(`/api/custom-completions/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).then(r => r.json()),
+  removeCustomCompletion: (id) => fetch(`/api/custom-completions/${id}`, { method: 'DELETE' }),
 };
-
+ 
 export default function App() {
   const [family, setFamily] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -103,7 +106,7 @@ export default function App() {
   const [pinTarget, setPinTarget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+ 
   const reload = useCallback(async () => {
     try {
       const data = await api.getFamily();
@@ -115,26 +118,26 @@ export default function App() {
       setLoading(false);
     }
   }, []);
-
+ 
   useEffect(() => { reload(); }, [reload]);
-
+ 
   // Auto-refresh every 15s so family members on different devices see updates
   useEffect(() => {
     if (!currentUser) return;
     const interval = setInterval(reload, 15000);
     return () => clearInterval(interval);
   }, [currentUser, reload]);
-
+ 
   // ============ HELPERS ============
   const getChoresForKid = (kidId) => family?.chores.filter(c => c.assignedTo === kidId) || [];
   const getExtraChores = () => family?.chores.filter(c => c.assignedTo === null || c.assignedTo === undefined) || [];
-
+ 
   const isChoreCompletedToday = (choreId, kidId) =>
     family?.completions.some(c => c.choreId === choreId && c.kidId === kidId && c.date === todayStr() && c.status !== 'rejected');
-
+ 
   const getChoreStatusToday = (choreId, kidId) =>
     family?.completions.find(c => c.choreId === choreId && c.kidId === kidId && c.date === todayStr())?.status || null;
-
+ 
   // Compute the current period start date for a chore based on its frequency.
   // Matches the backend logic exactly.
   const periodStart = (frequency, dateStr = todayStr()) => {
@@ -161,7 +164,7 @@ export default function App() {
     }
     return dateStr;
   };
-
+ 
   // Returns all active (approved/pending) claims for this Extra Chore in its current period.
   // Each entry: { kidId, status, completionId, date }
   const getExtraClaimsInPeriod = (chore) => {
@@ -171,7 +174,7 @@ export default function App() {
       .filter(c => c.choreId === chore.id && c.date >= ws && c.status !== 'rejected')
       .map(c => ({ kidId: c.kidId, status: c.status, completionId: c.id, date: c.date }));
   };
-
+ 
   // Eligibility for Extra Chores:
   // A kid is eligible if they completed all required chores EITHER last week OR this week so far.
   // This gives kids a grace period from last week's performance, plus a way to redeem themselves mid-week.
@@ -199,7 +202,7 @@ export default function App() {
       endStr: end.toISOString().split('T')[0],
     };
   };
-
+ 
   // Returns all dates (inclusive) from start to end
   const datesInRange = (startStr, endStr) => {
     const dates = [];
@@ -211,17 +214,17 @@ export default function App() {
     }
     return dates;
   };
-
+ 
   // Checks if a kid has satisfied ALL their required chores within a given week window
   const requiredChoresSatisfied = (kidId, weekOffset) => {
     const required = (family?.chores || []).filter(
       c => c.assignedTo === kidId && c.isRequiredForExtras
     );
     if (required.length === 0) return true;
-
+ 
     const { startStr, endStr } = getWeekBounds(weekOffset);
     const allDates = datesInRange(startStr, endStr);
-
+ 
     return required.every(chore => {
       const compsForThis = (family?.completions || []).filter(c =>
         c.choreId === chore.id &&
@@ -238,7 +241,7 @@ export default function App() {
       return allDates.every(d => completedDates.has(d));
     });
   };
-
+ 
   const isEligibleForExtras = (kidId) => {
     if (!family) return false;
     const required = family.chores.filter(c => c.assignedTo === kidId && c.isRequiredForExtras);
@@ -246,21 +249,21 @@ export default function App() {
     // Eligible if last week satisfied OR this week satisfied so far
     return requiredChoresSatisfied(kidId, 1) || requiredChoresSatisfied(kidId, 0);
   };
-
+ 
   // Returns list of required chores the kid still needs to complete to earn eligibility *via this week*.
   // If they're already eligible via last week, this returns [] (nothing blocks them).
   const getOutstandingWeeklies = (kidId) => {
     if (!family) return [];
     const required = family.chores.filter(c => c.assignedTo === kidId && c.isRequiredForExtras);
     if (required.length === 0) return [];
-
+ 
     // If eligible via last week, the kid is already unlocked
     if (requiredChoresSatisfied(kidId, 1)) return [];
-
+ 
     // Otherwise show what they need this week
     const { startStr, endStr } = getWeekBounds(0);
     const allDates = datesInRange(startStr, endStr);
-
+ 
     return required.filter(chore => {
       const compsForThis = (family.completions || []).filter(c =>
         c.choreId === chore.id &&
@@ -274,42 +277,46 @@ export default function App() {
       return !allDates.every(d => completedDates.has(d));
     });
   };
-
+ 
   // ============ BALANCE / PAYOUTS / GOALS / STREAKS ============
   // Total lifetime earnings (all approved completions across all time + weekly bonuses for perfect weeks in the past)
   // For simplicity in the prototype, we'll only sum approved completions. Perfect-week bonus gets credited
   // separately each week via the "pay out bonus" button that parents can hit at the end of a week.
   const getLifetimeEarnings = (kidId) => {
     if (!family) return 0;
-    return family.completions
+    const choreSum = family.completions
       .filter(c => c.kidId === kidId && c.status === 'approved')
       .reduce((sum, c) => {
         const ch = family.chores.find(ch => ch.id === c.choreId);
         return sum + (ch?.value || 0);
       }, 0);
+    const customSum = (family.customCompletions || [])
+      .filter(c => c.kidId === kidId && c.status === 'approved')
+      .reduce((sum, c) => sum + (c.value || 0), 0);
+    return choreSum + customSum;
   };
-
+ 
   const getTotalPaidOut = (kidId) => {
     if (!family?.payouts) return 0;
     return family.payouts
       .filter(p => p.kidId === kidId)
       .reduce((sum, p) => sum + p.amount, 0);
   };
-
+ 
   // Current unpaid balance = lifetime earnings - total paid out
   const getCurrentBalance = (kidId) => {
     return Math.max(0, getLifetimeEarnings(kidId) - getTotalPaidOut(kidId));
   };
-
+ 
   const getGoalsForKid = (kidId) => (family?.goals || []).filter(g => g.kidId === kidId);
-
+ 
   // Streak = consecutive days the kid had at least one APPROVED assigned chore completion
   // Ends if a day is missed. Today counts if they've done something today.
   const getStreak = (kidId) => {
     if (!family) return { current: 0, best: 0 };
     const assignedChoreIds = new Set(family.chores.filter(c => c.assignedTo === kidId).map(c => c.id));
     if (assignedChoreIds.size === 0) return { current: 0, best: 0 };
-
+ 
     // Get set of dates kid completed any assigned chore
     const completedDates = new Set(
       family.completions
@@ -317,7 +324,7 @@ export default function App() {
         .map(c => c.date)
     );
     if (completedDates.size === 0) return { current: 0, best: 0 };
-
+ 
     // Walk backwards from today
     const today = new Date(todayStr());
     let current = 0;
@@ -334,7 +341,7 @@ export default function App() {
         break;
       }
     }
-
+ 
     // Best streak: scan all completed dates and find longest run
     const sortedDates = [...completedDates].sort();
     let best = 0, run = 0, prev = null;
@@ -352,14 +359,15 @@ export default function App() {
     }
     return { current, best: Math.max(best, current) };
   };
-
+ 
   const getPendingApprovals = () => family?.completions.filter(c => c.status === 'pending') || [];
-
+  const getPendingCustomApprovals = () => (family?.customCompletions || []).filter(c => c.status === 'pending');
+ 
   const getWeekEarnings = (kidId, weekOffset = 0) => {
     if (!family) return { choreEarnings: 0, bonus: 0, extraEarnings: 0, total: 0, completions: [], weekLabel: '', allDone: false };
     const kid = family.kids.find(k => k.id === kidId);
     if (!kid) return { choreEarnings: 0, bonus: 0, extraEarnings: 0, total: 0, completions: [], weekLabel: '', allDone: false };
-
+ 
     const today = new Date(todayStr());
     const dayOfWeek = today.getDay();
     const weekStart = new Date(today);
@@ -368,11 +376,11 @@ export default function App() {
     weekEnd.setDate(weekStart.getDate() + 6);
     const weekStartStr = weekStart.toISOString().split('T')[0];
     const weekEndStr = weekEnd.toISOString().split('T')[0];
-
+ 
     const weekCompletions = family.completions.filter(c =>
       c.kidId === kidId && c.status === 'approved' && c.date >= weekStartStr && c.date <= weekEndStr
     );
-
+ 
     let choreEarnings = 0;
     let extraEarnings = 0;
     weekCompletions.forEach(comp => {
@@ -384,14 +392,38 @@ export default function App() {
         choreEarnings += ch.value || 0;
       }
     });
-
-    // Perfect-week bonus is based on assigned chores only
-    const assignedChores = getChoresForKid(kidId);
-    const allDone = assignedChores.length > 0 && assignedChores.every(ch =>
-      weekCompletions.some(c => c.choreId === ch.id)
+ 
+    // Approved "Other" custom completions count as extra earnings for the week
+    const weekCustomCompletions = (family.customCompletions || []).filter(c =>
+      c.kidId === kidId && c.status === 'approved' && c.date >= weekStartStr && c.date <= weekEndStr
     );
+    weekCustomCompletions.forEach(c => { extraEarnings += c.value || 0; });
+ 
+    // Perfect-week bonus: pays when all REQUIRED chores are complete for the week.
+    // If the kid has no required chores, no bonus is possible (bonus is a reward, not a raise).
+    const requiredChores = getChoresForKid(kidId).filter(c => c.isRequiredForExtras);
+    let allDone = false;
+    if (requiredChores.length > 0) {
+      // Build the set of dates in this week window (for daily chore "every day" check)
+      const weekDates = [];
+      const walker = new Date(weekStart);
+      while (walker <= weekEnd) {
+        weekDates.push(walker.toISOString().split('T')[0]);
+        walker.setDate(walker.getDate() + 1);
+      }
+      allDone = requiredChores.every(ch => {
+        const completionsForThis = weekCompletions.filter(c => c.choreId === ch.id);
+        if (ch.frequency === 'daily') {
+          // Every day in the week needs a completion
+          const completedDates = new Set(completionsForThis.map(c => c.date));
+          return weekDates.every(d => completedDates.has(d));
+        }
+        // weekly / biweekly / monthly required chores just need at least one completion in the week
+        return completionsForThis.length > 0;
+      });
+    }
     const bonus = allDone ? kid.weeklyAllowance : 0;
-
+ 
     return {
       choreEarnings,
       extraEarnings,
@@ -402,12 +434,12 @@ export default function App() {
       allDone,
     };
   };
-
+ 
   // ============ ACTIONS ============
   const toggleChore = async (choreId, kidId) => {
     const chore = family.chores.find(c => c.id === choreId);
     const isExtra = chore && (chore.assignedTo === null || chore.assignedTo === undefined);
-
+ 
     if (isExtra) {
       // For shared chores: check if THIS kid claimed it today
       const myClaim = family.completions.find(
@@ -437,12 +469,31 @@ export default function App() {
     }
     reload();
   };
-
+ 
   const approveCompletion = async (id) => { await api.updateCompletion(id, 'approved'); reload(); };
   const rejectCompletion = async (id) => { await api.removeCompletion(id); reload(); };
-
+ 
+  const submitCustomCompletion = async ({ kidId, title, icon }) => {
+    const isParent = currentUser?.role === 'parent';
+    await api.addCustomCompletion({
+      kidId, title, icon, date: todayStr(),
+      // Parents submit pre-approved with $0; they can edit value via the approval flow as needed
+      status: isParent ? 'approved' : 'pending',
+      value: 0,
+    });
+    reload();
+  };
+  const approveCustomCompletion = async (id, value, edits = {}) => {
+    await api.updateCustomCompletion(id, { status: 'approved', value: Number(value) || 0, ...edits });
+    reload();
+  };
+  const rejectCustomCompletion = async (id) => {
+    await api.removeCustomCompletion(id);
+    reload();
+  };
+ 
   const logout = () => { setCurrentUser(null); setScreen('dashboard'); };
-
+ 
   const handleProfileSelect = (profile, role) => {
     if (role === 'parent') {
       setPinTarget(profile);
@@ -452,7 +503,7 @@ export default function App() {
       setScreen('dashboard');
     }
   };
-
+ 
   const submitPin = async (pin) => {
     const res = await api.verifyPin(pinTarget.id, pin);
     if (!res.ok) return false;
@@ -462,12 +513,12 @@ export default function App() {
     setScreen('dashboard');
     return true;
   };
-
+ 
   // ============ RENDER ============
   if (loading) return <FullPageSpinner />;
   if (error) return <ErrorScreen message={error} onRetry={reload} />;
   if (!family) return null;
-
+ 
   if (!currentUser) {
     return (
       <LoginScreen
@@ -479,9 +530,9 @@ export default function App() {
       />
     );
   }
-
-  const pendingCount = getPendingApprovals().length;
-
+ 
+  const pendingCount = getPendingApprovals().length + getPendingCustomApprovals().length;
+ 
   return (
     <div className="min-h-screen bg-stone-50">
       {/* Header */}
@@ -504,7 +555,7 @@ export default function App() {
           </button>
         </div>
       </header>
-
+ 
       <main className="max-w-5xl mx-auto px-4 pb-28 pt-6">
         {screen === 'dashboard' && (
           <Dashboard
@@ -522,11 +573,20 @@ export default function App() {
             getCurrentBalance={getCurrentBalance}
             getStreak={getStreak}
             getGoalsForKid={getGoalsForKid}
+            onSubmitCustom={submitCustomCompletion}
             reload={reload}
           />
         )}
         {screen === 'approvals' && currentUser.role === 'parent' && (
-          <Approvals family={family} pending={getPendingApprovals()} onApprove={approveCompletion} onReject={rejectCompletion} />
+          <Approvals
+            family={family}
+            pending={getPendingApprovals()}
+            pendingCustom={getPendingCustomApprovals()}
+            onApprove={approveCompletion}
+            onReject={rejectCompletion}
+            onApproveCustom={approveCustomCompletion}
+            onRejectCustom={rejectCustomCompletion}
+          />
         )}
         {screen === 'history' && (
           <HistoryView currentUser={currentUser} family={family} getWeekEarnings={getWeekEarnings} />
@@ -535,7 +595,7 @@ export default function App() {
           <Manage family={family} reload={reload} currentUser={currentUser} />
         )}
       </main>
-
+ 
       {/* Bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-5xl mx-auto px-2 py-2 flex justify-around">
@@ -552,14 +612,14 @@ export default function App() {
     </div>
   );
 }
-
+ 
 // ============ LOGIN ============
 function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancelPin }) {
   const [pinInput, setPinInput] = useState('');
   const [pinError, setPinError] = useState(false);
-
+ 
   useEffect(() => { setPinInput(''); setPinError(false); }, [pinTarget]);
-
+ 
   const doSubmit = async () => {
     const ok = await onSubmitPin(pinInput);
     if (!ok) {
@@ -568,47 +628,49 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
       setPinInput('');
     }
   };
-
+ 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCA5A5 100%)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCA5A5 100%)' }}>
       <div className="max-w-2xl w-full">
-        <div className="text-center mb-10 float-in">
-          <div className="inline-block text-6xl mb-4">⭐</div>
-          <h1 className="display-font text-5xl md:text-6xl font-black text-stone-900 mb-2">Chorely</h1>
-          <p className="text-stone-700 text-lg font-semibold">Who's using the app?</p>
+        <div className="text-center mb-5 float-in">
+          <h1 className="display-font text-4xl font-black text-stone-900 leading-none">
+            <span className="text-3xl mr-1">⭐</span>Chorely
+          </h1>
+          <p className="text-stone-700 text-sm font-semibold mt-1">Who's using the app?</p>
         </div>
-
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-2xl border border-white/50 float-in" style={{ animationDelay: '0.1s' }}>
+ 
+        <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-4 md:p-5 shadow-2xl border border-white/50 float-in" style={{ animationDelay: '0.1s' }}>
           {family.parents.length > 0 && (
-            <div className="mb-6">
-              <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-2">Parents</div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="mb-4">
+              <div className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2 px-1">Parents</div>
+              <div className="flex gap-2 flex-wrap">
                 {family.parents.map(p => (
                   <button key={p.id} onClick={() => onSelectProfile(p, 'parent')}
-                    className="bg-white hover:bg-amber-50 rounded-2xl p-4 flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 border-2 border-transparent hover:border-amber-300">
-                    <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center text-4xl">{p.avatar}</div>
-                    <div className="font-bold text-stone-900">{p.name}</div>
-                    <div className="text-xs text-stone-500 font-semibold flex items-center gap-1"><KeyRound size={11} /> PIN</div>
+                    className="flex-1 min-w-[120px] bg-white hover:bg-amber-50 rounded-2xl px-3 py-2 flex items-center gap-2 shadow-sm hover:shadow-md transition-all border-2 border-transparent hover:border-amber-300">
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center text-2xl flex-shrink-0">{p.avatar}</div>
+                    <div className="text-left min-w-0 flex-1">
+                      <div className="font-bold text-stone-900 truncate text-sm">{p.name}</div>
+                      <div className="text-[10px] text-stone-500 font-semibold flex items-center gap-1"><KeyRound size={9} /> PIN</div>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
           )}
-
+ 
           <div>
-            <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-2">Kids</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2 px-1">Kids</div>
             {family.kids.length === 0 ? (
-              <div className="text-center py-6 text-stone-500 font-semibold">No kids added yet.</div>
+              <div className="text-center py-6 text-stone-500 font-semibold text-sm">No kids added yet.</div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
                 {family.kids.map(k => (
                   <button key={k.id} onClick={() => onSelectProfile(k, 'kid')}
-                    className="bg-white hover:bg-stone-50 rounded-2xl p-4 flex flex-col items-center gap-2 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 border-2 border-transparent"
+                    className="bg-white hover:bg-stone-50 rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 border-2 border-transparent"
                     onMouseEnter={(e) => e.currentTarget.style.borderColor = k.color}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}>
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-4xl" style={{ background: k.color + '20' }}>{k.avatar}</div>
-                    <div className="font-bold text-stone-900">{k.name}</div>
-                    <div className="text-xs text-stone-500 font-semibold">Tap to enter</div>
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: k.color + '20' }}>{k.avatar}</div>
+                    <div className="font-bold text-stone-900 text-sm leading-tight">{k.name}</div>
                   </button>
                 ))}
               </div>
@@ -616,7 +678,7 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
           </div>
         </div>
       </div>
-
+ 
       {pinTarget && (
         <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onCancelPin}>
           <div className={`bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl pop-in ${pinError ? 'shake' : ''}`} onClick={(e) => e.stopPropagation()}>
@@ -644,9 +706,9 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
     </div>
   );
 }
-
+ 
 // ============ DASHBOARD ============
-function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, getChoreStatusToday, getWeekEarnings, getChoresForKid, getExtraChores, getExtraClaimsInPeriod, isEligibleForExtras, getOutstandingWeeklies, getCurrentBalance, getStreak, getGoalsForKid, reload }) {
+function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, getChoreStatusToday, getWeekEarnings, getChoresForKid, getExtraChores, getExtraClaimsInPeriod, isEligibleForExtras, getOutstandingWeeklies, getCurrentBalance, getStreak, getGoalsForKid, onSubmitCustom, reload }) {
   const isParent = currentUser.role === 'parent';
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -657,7 +719,9 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
     biweekly: extraChores.filter(c => c.frequency === 'biweekly'),
     monthly:  extraChores.filter(c => c.frequency === 'monthly'),
   };
-
+  // "Other" modal state — can be opened for self (kid) or for a specific kid (parent from a kid card)
+  const [otherForKidId, setOtherForKidId] = useState(null);
+ 
   if (isParent) {
     return (
       <div className="space-y-6">
@@ -694,7 +758,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
             </div>
           );
         })}
-
+ 
         {/* Extra Chores section for parent view (read-only status of shared chores) */}
         {extraChores.length > 0 && (
           <div className="slide-up" style={{ animationDelay: '0.3s' }}>
@@ -711,10 +775,43 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
             />
           </div>
         )}
+ 
+        {/* "Other" — parent can log an ad-hoc chore for any kid */}
+        {family.kids.length > 0 && (
+          <div className="slide-up" style={{ animationDelay: '0.35s' }}>
+            <button
+              onClick={() => setOtherForKidId('__picker__')}
+              className="w-full bg-white hover:bg-stone-50 border-2 border-dashed border-stone-300 hover:border-amber-300 rounded-3xl p-4 flex items-center justify-center gap-3 transition group"
+            >
+              <div className="text-2xl">✨</div>
+              <div className="display-font text-base font-black text-stone-900">Log an "Other" for a kid</div>
+              <Plus size={20} className="text-stone-400 group-hover:text-amber-500 ml-auto" strokeWidth={3} />
+            </button>
+          </div>
+        )}
+ 
+        {otherForKidId === '__picker__' && (
+          <PickKidThenOtherModal
+            family={family}
+            onClose={() => setOtherForKidId(null)}
+            onPick={(kidId) => setOtherForKidId(kidId)}
+          />
+        )}
+        {otherForKidId && otherForKidId !== '__picker__' && (
+          <OtherChoreModal
+            kid={family.kids.find(k => k.id === otherForKidId)}
+            onClose={() => setOtherForKidId(null)}
+            onSubmit={async ({ title, icon }) => {
+              await onSubmitCustom({ kidId: otherForKidId, title, icon });
+              setOtherForKidId(null);
+            }}
+            isParent={isParent}
+          />
+        )}
       </div>
     );
   }
-
+ 
   const chores = getChoresForKid(currentUser.id);
   const earnings = getWeekEarnings(currentUser.id, 0);
   const dailyChores = chores.filter(c => c.frequency === 'daily');
@@ -724,14 +821,14 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
   const balance = getCurrentBalance ? getCurrentBalance(currentUser.id) : 0;
   const streak = getStreak ? getStreak(currentUser.id) : { current: 0, best: 0 };
   const goals = getGoalsForKid ? getGoalsForKid(currentUser.id) : [];
-
+ 
   return (
     <div className="space-y-6">
       <div className="slide-up">
         <div className="text-sm font-bold text-stone-500 uppercase tracking-wider">{dateStr}</div>
         <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900 mt-1">Let's do this! ✨</h2>
       </div>
-
+ 
       <div className="rounded-3xl p-6 text-white slide-up shadow-xl relative overflow-hidden"
            style={{ background: `linear-gradient(135deg, ${currentUser.color} 0%, ${currentUser.color}DD 100%)`, animationDelay: '0.05s' }}>
         <div className="absolute -right-8 -top-8 text-9xl opacity-10">💰</div>
@@ -760,11 +857,11 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
             {earnings.allDone && <div>🎁 ${currentUser.weeklyAllowance.toFixed(2)}</div>}
           </div>
           {!earnings.allDone && chores.length > 0 && (
-            <div className="mt-2 text-xs font-semibold opacity-80">🎯 Finish all your chores this week for a ${currentUser.weeklyAllowance} bonus!</div>
+            <div className="mt-2 text-xs font-semibold opacity-80">🎯 Finish all your required chores this week for a ${currentUser.weeklyAllowance} bonus!</div>
           )}
         </div>
       </div>
-
+ 
       {goals.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.08s' }}>
           <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1 flex items-center gap-1">
@@ -777,7 +874,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           </div>
         </div>
       )}
-
+ 
       {dailyChores.length > 0 && (
         <div className="bg-white rounded-3xl p-5 shadow-sm slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between mb-2">
@@ -789,7 +886,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           </div>
         </div>
       )}
-
+ 
       {dailyChores.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.15s' }}>
           <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1">Every day</div>
@@ -803,7 +900,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           </div>
         </div>
       )}
-
+ 
       {weeklyChores.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.2s' }}>
           <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1">This week</div>
@@ -817,7 +914,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           </div>
         </div>
       )}
-
+ 
       {chores.length === 0 && extraChores.length === 0 && (
         <div className="bg-white rounded-3xl p-12 text-center slide-up">
           <div className="text-5xl mb-3">🌟</div>
@@ -825,7 +922,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           <div className="text-sm text-stone-500 mt-1">Ask your parent to add some.</div>
         </div>
       )}
-
+ 
       {/* Extra Chores section - visible to every kid, shared across the family */}
       {extraChores.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.25s' }}>
@@ -842,17 +939,44 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           />
         </div>
       )}
+ 
+      {/* "Other" button — kid can submit something they did that isn't a listed chore */}
+      <div className="slide-up" style={{ animationDelay: '0.3s' }}>
+        <button
+          onClick={() => setOtherForKidId(currentUser.id)}
+          className="w-full bg-white hover:bg-stone-50 border-2 border-dashed border-stone-300 hover:border-amber-300 rounded-3xl p-5 flex items-center justify-center gap-3 transition group"
+        >
+          <div className="text-3xl">✨</div>
+          <div className="text-left">
+            <div className="display-font text-lg font-black text-stone-900">Did something else?</div>
+            <div className="text-xs font-semibold text-stone-500">Tell your parent and they'll add it up</div>
+          </div>
+          <Plus size={22} className="text-stone-400 group-hover:text-amber-500 ml-auto" strokeWidth={3} />
+        </button>
+      </div>
+ 
+      {otherForKidId && (
+        <OtherChoreModal
+          kid={family.kids.find(k => k.id === otherForKidId)}
+          onClose={() => setOtherForKidId(null)}
+          onSubmit={async ({ title, icon }) => {
+            await onSubmitCustom({ kidId: otherForKidId, title, icon });
+            setOtherForKidId(null);
+          }}
+          isParent={isParent}
+        />
+      )}
     </div>
   );
 }
-
+ 
 // ============ EXTRA CHORES SECTION ============
 function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtraClaimsInPeriod, currentUser, onToggleChore, isEligibleForExtras, getOutstandingWeeklies }) {
   const isParent = currentUser.role === 'parent';
   // For kids: are they eligible? For parents: always "eligible" (they can manage anyone)
   const eligible = isParent ? true : (isEligibleForExtras ? isEligibleForExtras(currentUser.id) : true);
   const outstanding = (!isParent && getOutstandingWeeklies) ? getOutstandingWeeklies(currentUser.id) : [];
-
+ 
   return (
     <div className={`rounded-3xl p-5 shadow-sm border-2 ${eligible ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200/50' : 'bg-stone-100 border-stone-200'}`}>
       <div className="flex items-center gap-2 mb-1">
@@ -860,7 +984,7 @@ function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtra
         <div className="display-font text-xl font-black text-stone-900">{title}</div>
       </div>
       <div className="text-xs font-semibold text-stone-600 mb-4 ml-9">{subtitle}</div>
-
+ 
       {!eligible && (
         <div className="bg-white rounded-2xl p-4 mb-4 border-2 border-stone-200 flex items-start gap-3">
           <Lock size={20} className="text-stone-500 flex-shrink-0 mt-0.5" />
@@ -886,7 +1010,7 @@ function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtra
           </div>
         </div>
       )}
-
+ 
       {['daily', 'weekly', 'biweekly', 'monthly'].map(cadence => {
         const list = extrasByCadence[cadence] || [];
         if (list.length === 0) return null;
@@ -925,18 +1049,18 @@ function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtra
     </div>
   );
 }
-
+ 
 function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onToggle, eligible = true }) {
   const isParent = currentUser.role === 'parent';
   const maxClaimers = chore.maxClaimers || 1;
   const claimCount = claims.length;
   const spotsLeft = Math.max(0, maxClaimers - claimCount);
   const poolFull = spotsLeft === 0;
-
+ 
   const claimedByMe = !!myClaim;
   const isApproved = myClaim?.status === 'approved';
   const isPending = myClaim?.status === 'pending';
-
+ 
   // Interaction rules:
   // - Parents: can always tap (to un-do the first claim, or handle it)
   // - Kids who claimed it: can un-claim their own
@@ -945,9 +1069,9 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
   const isInteractive = isParent
     ? (claimCount > 0) // parents only get a useful action if there's something to un-claim
     : (claimedByMe || (!poolFull && eligible));
-
+ 
   const isLockedForMe = !isParent && !claimedByMe && (!eligible || poolFull);
-
+ 
   // Visual state keyed off MY claim (for kids) or the overall pool (for parents)
   let bg;
   if (claimedByMe && isApproved) bg = 'bg-emerald-50 border-emerald-200';
@@ -955,9 +1079,9 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
   else if (isLockedForMe) bg = 'bg-stone-50 border-stone-200 opacity-60';
   else if (poolFull) bg = 'bg-stone-100 border-stone-200 opacity-75';
   else bg = 'bg-white border-amber-200 hover:border-amber-400 hover:shadow-md';
-
+ 
   const myCompDate = myClaim?.date ? new Date(myClaim.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
-
+ 
   return (
     <button
       onClick={isInteractive ? onToggle : undefined}
@@ -969,7 +1093,7 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
         <div className={`font-bold text-stone-900 ${claimedByMe && isApproved ? 'line-through opacity-60' : ''}`}>{chore.title}</div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <div className="text-xs font-black text-amber-700">${chore.value.toFixed(2)}</div>
-
+ 
           {/* Show each claimer as a small badge */}
           {claims.map(c => {
             const k = family.kids.find(kk => kk.id === c.kidId);
@@ -984,12 +1108,12 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
               </div>
             );
           })}
-
+ 
           {/* My personal claim status takes precedence */}
           {claimedByMe && isPending && (
             <div className="text-[10px] font-bold text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full">Awaiting approval</div>
           )}
-
+ 
           {/* Pool state for kids who aren't claimed yet */}
           {!claimedByMe && !isParent && (
             <>
@@ -1006,7 +1130,7 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
               )}
             </>
           )}
-
+ 
           {/* Parent view: show pool stats */}
           {isParent && maxClaimers > 1 && (
             <div className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full">
@@ -1029,7 +1153,7 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
     </button>
   );
 }
-
+ 
 function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, balance, streak, goals, reload, onToggleChore, isChoreCompletedToday, getChoreStatusToday }) {
   const [expanded, setExpanded] = useState(false);
   const [showPayout, setShowPayout] = useState(false);
@@ -1055,7 +1179,7 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
             </div>
           </div>
         </div>
-
+ 
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="bg-emerald-50 rounded-2xl p-3">
             <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
@@ -1069,13 +1193,13 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
             <DollarSign size={16} strokeWidth={3} /> Pay out
           </button>
         </div>
-
+ 
         {totalToday > 0 && (
           <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
             <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, background: kid.color }} />
           </div>
         )}
-
+ 
         {goals && goals.length > 0 && (
           <div className="mt-3 space-y-2">
             {goals.map(goal => (
@@ -1083,14 +1207,14 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
             ))}
           </div>
         )}
-
+ 
         <button onClick={() => setExpanded(!expanded)}
                 className="w-full mt-3 py-2 text-xs font-black text-stone-500 hover:text-stone-900 transition flex items-center justify-center gap-1">
           {expanded ? 'Hide' : 'Show'} chores
           <span>{expanded ? '−' : '+'}</span>
         </button>
       </div>
-
+ 
       {expanded && (
         <div className="border-t border-stone-100 p-4 bg-stone-50/50 space-y-2">
           {chores.length === 0 ? (
@@ -1105,7 +1229,7 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
           )}
         </div>
       )}
-
+ 
       {showPayout && (
         <PayoutModal kid={kid} currentBalance={balance}
                      onClose={() => setShowPayout(false)}
@@ -1118,7 +1242,7 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
     </div>
   );
 }
-
+ 
 function GoalCard({ goal, balance, color, compact }) {
   const pct = goal.target > 0 ? Math.min(100, (balance / goal.target) * 100) : 0;
   const reached = balance >= goal.target;
@@ -1157,7 +1281,7 @@ function GoalCard({ goal, balance, color, compact }) {
     </div>
   );
 }
-
+ 
 function ChoreCard({ chore, completed, status, onToggle, color }) {
   const isPending = status === 'pending';
   const isApproved = status === 'approved';
@@ -1189,18 +1313,19 @@ function ChoreCard({ chore, completed, status, onToggle, color }) {
     </button>
   );
 }
-
+ 
 // ============ APPROVALS ============
-function Approvals({ family, pending, onApprove, onReject }) {
+function Approvals({ family, pending, pendingCustom = [], onApprove, onReject, onApproveCustom, onRejectCustom }) {
+  const total = pending.length + pendingCustom.length;
   return (
     <div className="space-y-6">
       <div className="slide-up">
         <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">Needs Approval</h2>
         <p className="text-stone-500 font-semibold mt-1">
-          {pending.length === 0 ? 'All caught up!' : `${pending.length} ${pending.length === 1 ? 'chore' : 'chores'} waiting for you`}
+          {total === 0 ? 'All caught up!' : `${total} ${total === 1 ? 'item' : 'items'} waiting for you`}
         </p>
       </div>
-      {pending.length === 0 ? (
+      {total === 0 ? (
         <div className="bg-white rounded-3xl p-12 text-center slide-up">
           <div className="text-6xl mb-3">🎉</div>
           <div className="font-black text-xl text-stone-900">Nothing to approve</div>
@@ -1237,23 +1362,92 @@ function Approvals({ family, pending, onApprove, onReject }) {
               </div>
             );
           })}
+          {pendingCustom.map((cc, i) => {
+            const kid = family.kids.find(k => k.id === cc.kidId);
+            if (!kid) return null;
+            return (
+              <CustomApprovalCard
+                key={cc.id}
+                custom={cc}
+                kid={kid}
+                animationDelay={(pending.length + i) * 0.05}
+                onApprove={(value) => onApproveCustom(cc.id, value)}
+                onReject={() => onRejectCustom(cc.id)}
+              />
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
+ 
+function CustomApprovalCard({ custom, kid, animationDelay, onApprove, onReject }) {
+  const [value, setValue] = useState('');
+  const numeric = parseFloat(value);
+  const canApprove = !isNaN(numeric) && numeric >= 0;
+  const QUICK_PICKS = [1, 2, 5];
+ 
+  return (
+    <div className="bg-white rounded-3xl p-5 shadow-sm slide-up border-2 border-amber-200/50" style={{ animationDelay: `${animationDelay}s` }}>
+      <div className="flex items-center gap-4 mb-4">
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+        <div className="flex-1">
+          <div className="font-black text-stone-900">{kid.name}</div>
+          <div className="text-xs font-bold text-amber-700 uppercase tracking-wider">"Other" entry</div>
+        </div>
+        <div className="text-3xl">{custom.icon || '✨'}</div>
+      </div>
+      <div className="bg-amber-50 border-2 border-amber-200/60 rounded-2xl p-4 mb-4">
+        <div className="font-bold text-stone-900">{custom.title}</div>
+        <div className="text-xs font-semibold text-stone-500 mt-1">Submitted {custom.date}</div>
+      </div>
+ 
+      <div className="mb-3">
+        <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">How much is it worth?</label>
+        <div className="flex gap-2 mb-2">
+          {QUICK_PICKS.map(amt => (
+            <button key={amt} onClick={() => setValue(String(amt.toFixed(2)))}
+              className={`flex-1 py-2 rounded-xl font-black text-sm transition ${value === amt.toFixed(2) ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 hover:bg-stone-200 text-stone-700'}`}>
+              ${amt}
+            </button>
+          ))}
+        </div>
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-black">$</span>
+          <input
+            type="number" min="0" step="0.25" value={value} onChange={(e) => setValue(e.target.value)}
+            placeholder="Custom amount"
+            className="w-full pl-7 pr-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-amber-300 text-stone-900 font-semibold"
+          />
+        </div>
+      </div>
+ 
+      <div className="flex gap-3">
+        <button onClick={onReject} className="flex-1 py-3 rounded-2xl font-black bg-stone-100 hover:bg-red-100 text-stone-700 hover:text-red-700 transition flex items-center justify-center gap-2">
+          <X size={20} strokeWidth={3} /> Reject
+        </button>
+        <button onClick={() => canApprove && onApprove(numeric)} disabled={!canApprove}
+          className="flex-1 py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:shadow-none">
+          <Check size={20} strokeWidth={3} /> Approve
+        </button>
+      </div>
+    </div>
+  );
+}
+ 
+ 
 // ============ HISTORY ============
 function HistoryView({ currentUser, family, getWeekEarnings }) {
   const isParent = currentUser.role === 'parent';
   const kidsToShow = isParent ? family.kids : family.kids.filter(k => k.id === currentUser.id);
   const [selectedKidId, setSelectedKidId] = useState(kidsToShow[0]?.id);
   const [weekOffset, setWeekOffset] = useState(1);
-
+ 
   useEffect(() => {
     if (!kidsToShow.find(k => k.id === selectedKidId)) setSelectedKidId(kidsToShow[0]?.id);
   }, [kidsToShow, selectedKidId]);
-
+ 
   const selectedKid = family.kids.find(k => k.id === selectedKidId);
   if (!selectedKid) {
     return (
@@ -1266,18 +1460,31 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
       </div>
     );
   }
-
+ 
   const weekData = getWeekEarnings(selectedKid.id, weekOffset);
   const weeks = [3, 2, 1, 0].map(offset => getWeekEarnings(selectedKid.id, offset));
   const maxEarn = Math.max(...weeks.map(w => w.total), 1);
-
+ 
+  // Custom "Other" completions for this kid in the selected week window
+  const today = new Date(todayStr());
+  const dayOfWeek = today.getDay();
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - dayOfWeek - (weekOffset * 7));
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+  const weekEndStr = weekEnd.toISOString().split('T')[0];
+  const weekCustoms = (family.customCompletions || []).filter(c =>
+    c.kidId === selectedKid.id && c.status === 'approved' && c.date >= weekStartStr && c.date <= weekEndStr
+  );
+ 
   return (
     <div className="space-y-6">
       <div className="slide-up">
         <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">History</h2>
         <p className="text-stone-500 font-semibold mt-1">Past chores and allowance</p>
       </div>
-
+ 
       {isParent && kidsToShow.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2 slide-up">
           {kidsToShow.map(kid => (
@@ -1289,7 +1496,7 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
           ))}
         </div>
       )}
-
+ 
       <div className="bg-white rounded-3xl p-6 shadow-sm slide-up">
         <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-4">Last 4 weeks</div>
         <div className="flex items-end justify-between gap-3 h-40">
@@ -1310,7 +1517,7 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
           })}
         </div>
       </div>
-
+ 
       <div className="bg-white rounded-3xl p-6 shadow-sm slide-up">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
@@ -1323,7 +1530,7 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
             </div>
           )}
         </div>
-
+ 
         <div className="grid grid-cols-3 gap-2 mb-5">
           <div className="bg-stone-50 rounded-2xl p-3">
             <div className="text-[10px] font-bold text-stone-500 uppercase">Chores</div>
@@ -1338,7 +1545,7 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
             <div className="display-font text-xl font-black mt-1" style={{ color: weekData.bonus > 0 ? '#059669' : '#A8A29E' }}>${weekData.bonus.toFixed(2)}</div>
           </div>
         </div>
-
+ 
         <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3">Chores Completed</div>
         {weekData.completions.length === 0 ? (
           <div className="text-center py-6 text-stone-400 font-semibold">No chores completed this week</div>
@@ -1367,11 +1574,37 @@ function HistoryView({ currentUser, family, getWeekEarnings }) {
             })}
           </div>
         )}
+ 
+        {weekCustoms.length > 0 && (
+          <>
+            <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 mt-5">"Other" Entries</div>
+            <div className="space-y-2">
+              {weekCustoms.map(cc => {
+                const compDate = new Date(cc.date);
+                return (
+                  <div key={cc.id} className="flex items-center gap-3 p-3 rounded-2xl bg-amber-50">
+                    <div className="text-2xl">{cc.icon || '✨'}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-stone-900 flex items-center gap-2 flex-wrap">
+                        {cc.title}
+                        <span className="text-[10px] font-black text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full">OTHER</span>
+                      </div>
+                      <div className="text-xs text-stone-500 font-semibold">
+                        {compDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <div className="font-black text-emerald-600">+${(cc.value || 0).toFixed(2)}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
+ 
 // ============ MANAGE ============
 function Manage({ family, reload, currentUser }) {
   const [showAddChore, setShowAddChore] = useState(false);
@@ -1382,7 +1615,7 @@ function Manage({ family, reload, currentUser }) {
   const [editingChore, setEditingChore] = useState(null);
   const [addingGoalFor, setAddingGoalFor] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-
+ 
   const doDelete = async () => {
     if (!confirmDelete) return;
     if (confirmDelete.type === 'kid') await api.removeKid(confirmDelete.id);
@@ -1393,14 +1626,14 @@ function Manage({ family, reload, currentUser }) {
     setConfirmDelete(null);
     reload();
   };
-
+ 
   return (
     <div className="space-y-6">
       <div className="slide-up">
         <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">Manage</h2>
         <p className="text-stone-500 font-semibold mt-1">Family, chores, and settings</p>
       </div>
-
+ 
       {/* Parents */}
       <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
         <div className="flex items-center justify-between mb-4">
@@ -1434,7 +1667,7 @@ function Manage({ family, reload, currentUser }) {
           ))}
         </div>
       </div>
-
+ 
       {/* Kids */}
       <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
         <div className="flex items-center justify-between mb-4">
@@ -1466,7 +1699,7 @@ function Manage({ family, reload, currentUser }) {
           ))}
         </div>
       </div>
-
+ 
       {/* Chores */}
       <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
         <div className="flex items-center justify-between mb-4">
@@ -1515,7 +1748,7 @@ function Manage({ family, reload, currentUser }) {
               </div>
             );
           })}
-
+ 
           {/* Extra (shared) Chores */}
           {family.chores.filter(c => c.assignedTo === null || c.assignedTo === undefined).length > 0 && (
             <div>
@@ -1545,7 +1778,7 @@ function Manage({ family, reload, currentUser }) {
           )}
         </div>
       </div>
-
+ 
       {/* Savings Goals */}
       <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
         <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-4 flex items-center gap-1">
@@ -1593,7 +1826,7 @@ function Manage({ family, reload, currentUser }) {
           </div>
         )}
       </div>
-
+ 
       {/* Payout History */}
       {(family.payouts || []).length > 0 && (
         <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
@@ -1626,7 +1859,7 @@ function Manage({ family, reload, currentUser }) {
           </div>
         </div>
       )}
-
+ 
       {showAddChore && <AddChoreModal kids={family.kids} onAdd={async (d) => {
         const { assignedToIds, isExtra, ...rest } = d;
         if (isExtra) {
@@ -1655,7 +1888,7 @@ function Manage({ family, reload, currentUser }) {
     </div>
   );
 }
-
+ 
 // ============ MODALS ============
 function ModalShell({ children, onClose, title }) {
   return (
@@ -1671,7 +1904,7 @@ function ModalShell({ children, onClose, title }) {
     </div>
   );
 }
-
+ 
 function AddChoreModal({ kids, onAdd, onClose }) {
   const [title, setTitle] = useState('');
   const [value, setValue] = useState('1.00');
@@ -1681,7 +1914,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
   const [frequency, setFrequency] = useState('daily');
   const [isRequiredForExtras, setIsRequiredForExtras] = useState(false);
   const [maxClaimers, setMaxClaimers] = useState(1);
-
+ 
   const toggleKid = (kidId) => {
     setAssignedToIds(prev =>
       prev.includes(kidId) ? prev.filter(id => id !== kidId) : [...prev, kidId]
@@ -1689,11 +1922,11 @@ function AddChoreModal({ kids, onAdd, onClose }) {
   };
   const selectAll = () => setAssignedToIds(kids.map(k => k.id));
   const clearAll = () => setAssignedToIds([]);
-
+ 
   const canSubmit = title.trim() && !isNaN(parseFloat(value)) &&
                     (mode === 'extra' || assignedToIds.length > 0);
   const allSelected = assignedToIds.length === kids.length && kids.length > 0;
-
+ 
   return (
     <ModalShell onClose={onClose} title="New chore">
       <div className="space-y-4">
@@ -1713,7 +1946,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
             ? 'Goes to specific kids. Each gets their own copy.'
             : 'Shared across all kids — whoever does it first earns the money.'}
         </div>
-
+ 
         <Field label="Name">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Feed the cat" autoFocus
                  className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
@@ -1740,7 +1973,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
             </select>
           </Field>
         </div>
-
+ 
         {mode === 'assigned' ? (
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -1794,7 +2027,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
             </div>
           </div>
         )}
-
+ 
         {mode === 'extra' && (
           <Field label="How many kids can claim this?">
             <div className="flex items-center gap-3 bg-stone-50 rounded-2xl p-3 border-2 border-stone-200">
@@ -1818,7 +2051,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
             </div>
           </Field>
         )}
-
+ 
         {mode === 'assigned' && (
           <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-amber-50 border-amber-300' : 'bg-stone-50 border-stone-200 hover:border-stone-300'}`}>
             <input type="checkbox" checked={isRequiredForExtras}
@@ -1834,7 +2067,7 @@ function AddChoreModal({ kids, onAdd, onClose }) {
             </div>
           </label>
         )}
-
+ 
         <button disabled={!canSubmit}
                 onClick={() => onAdd({
                   title: title.trim(),
@@ -1852,16 +2085,16 @@ function AddChoreModal({ kids, onAdd, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function EditKidModal({ kid, onSave, onClose }) {
   const [name, setName] = useState(kid.name);
   const [weeklyAllowance, setWeeklyAllowance] = useState(String(kid.weeklyAllowance ?? 0));
   const [age, setAge] = useState(String(kid.age ?? 0));
   const [avatar, setAvatar] = useState(kid.avatar);
   const [color, setColor] = useState(kid.color);
-
+ 
   const canSubmit = name.trim().length > 0 && !isNaN(parseFloat(weeklyAllowance)) && !isNaN(parseInt(age));
-
+ 
   return (
     <ModalShell onClose={onClose} title={`Edit ${kid.name}`}>
       <div className="space-y-4">
@@ -1905,7 +2138,7 @@ function EditKidModal({ kid, onSave, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function AddKidModal({ onAdd, onClose }) {
   const [name, setName] = useState('');
   const [age, setAge] = useState('8');
@@ -1955,7 +2188,7 @@ function AddKidModal({ onAdd, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function AddParentModal({ onAdd, onClose }) {
   const [name, setName] = useState('');
   const [avatar, setAvatar] = useState('👤');
@@ -1988,7 +2221,7 @@ function AddParentModal({ onAdd, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function ChangePinModal({ parent, onClose }) {
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
@@ -2033,13 +2266,75 @@ function ChangePinModal({ parent, onClose }) {
     </ModalShell>
   );
 }
-
+ 
+function PickKidThenOtherModal({ family, onClose, onPick }) {
+  return (
+    <ModalShell onClose={onClose} title="Who did it?">
+      <div className="grid grid-cols-2 gap-3">
+        {family.kids.map(kid => (
+          <button key={kid.id} onClick={() => onPick(kid.id)}
+            className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-stone-200 hover:border-amber-300 hover:bg-amber-50 transition">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: kid.color + '30' }}>{kid.avatar}</div>
+            <div className="font-black text-stone-900">{kid.name}</div>
+          </button>
+        ))}
+      </div>
+    </ModalShell>
+  );
+}
+ 
+function OtherChoreModal({ kid, onClose, onSubmit, isParent }) {
+  const [title, setTitle] = useState('');
+  const [icon, setIcon] = useState('✨');
+  const ICONS = ['✨', '🌟', '💪', '🤝', '🧺', '🧹', '🐾', '🌳', '🚗', '🧽', '📚', '🎨'];
+  const trimmed = title.trim();
+  const canSubmit = trimmed.length > 0 && trimmed.length <= 60;
+ 
+  return (
+    <ModalShell onClose={onClose} title={isParent ? `Log for ${kid.name}` : 'What did you do?'}>
+      <div className="space-y-4">
+        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 text-xs font-semibold text-amber-900">
+          {isParent
+            ? 'Add something this kid did that\'s not a listed chore. It\'ll go straight to approved.'
+            : 'Describe what you did. Your parent will check it and decide how much it\'s worth.'}
+        </div>
+ 
+        <div>
+          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-1 block">What was it?</label>
+          <input
+            type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus maxLength={60}
+            placeholder="e.g. Helped unload groceries"
+            className="w-full px-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-amber-300 text-stone-900 font-semibold"
+          />
+        </div>
+ 
+        <div>
+          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">Pick an icon</label>
+          <div className="grid grid-cols-6 gap-2">
+            {ICONS.map(ic => (
+              <button key={ic} onClick={() => setIcon(ic)}
+                className={`aspect-square rounded-2xl text-2xl flex items-center justify-center transition ${icon === ic ? 'bg-amber-400 ring-2 ring-amber-500' : 'bg-stone-100 hover:bg-stone-200'}`}>
+                {ic}
+              </button>
+            ))}
+          </div>
+        </div>
+ 
+        <button onClick={() => canSubmit && onSubmit({ title: trimmed, icon })} disabled={!canSubmit}
+          className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+          {isParent ? 'Add it' : 'Send for approval'}
+        </button>
+      </div>
+    </ModalShell>
+  );
+}
+ 
 function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
   const [amount, setAmount] = useState(String(currentBalance.toFixed(2)));
   const [note, setNote] = useState('');
   const amt = parseFloat(amount);
   const canSubmit = !isNaN(amt) && amt > 0 && amt <= currentBalance;
-
+ 
   return (
     <ModalShell onClose={onClose} title={`Pay ${kid.name}`}>
       <div className="space-y-4">
@@ -2050,7 +2345,7 @@ function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
             <div className="display-font text-2xl font-black text-emerald-700">${currentBalance.toFixed(2)}</div>
           </div>
         </div>
-
+ 
         <Field label="Amount to pay out">
           <div className="relative">
             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</div>
@@ -2068,18 +2363,18 @@ function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
             </button>
           </div>
         </Field>
-
+ 
         <Field label="Note (optional)">
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g., Cash, Venmo, deposit"
                  className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
         </Field>
-
+ 
         {!isNaN(amt) && amt > 0 && amt <= currentBalance && (
           <div className="bg-stone-50 rounded-2xl p-3 text-xs font-bold text-stone-600">
             After payout: <span className="text-stone-900">${(currentBalance - amt).toFixed(2)}</span> will remain in {kid.name}'s balance.
           </div>
         )}
-
+ 
         <button disabled={!canSubmit} onClick={() => onConfirm(amt, note)}
                 className="w-full py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition shadow-lg shadow-emerald-200 disabled:shadow-none">
           Pay out ${!isNaN(amt) ? amt.toFixed(2) : '0.00'}
@@ -2088,7 +2383,7 @@ function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
     </ModalShell>
   );
 }
-
+ 
 function EditChoreModal({ chore, kids, onSave, onClose }) {
   const [title, setTitle] = useState(chore.title);
   const [value, setValue] = useState(String(chore.value));
@@ -2098,9 +2393,9 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
   const [assignedTo, setAssignedTo] = useState(chore.assignedTo);
   const [isRequiredForExtras, setIsRequiredForExtras] = useState(!!chore.isRequiredForExtras);
   const [maxClaimers, setMaxClaimers] = useState(chore.maxClaimers || 1);
-
+ 
   const canSubmit = title.trim() && !isNaN(parseFloat(value)) && (mode === 'extra' || assignedTo);
-
+ 
   return (
     <ModalShell onClose={onClose} title="Edit chore">
       <div className="space-y-4">
@@ -2114,7 +2409,7 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
             <Sparkles size={14} /> Extra
           </button>
         </div>
-
+ 
         <Field label="Name">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
                  className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
@@ -2141,7 +2436,7 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
             </select>
           </Field>
         </div>
-
+ 
         {mode === 'assigned' && (
           <Field label="Assigned to">
             <div className="grid grid-cols-3 gap-2">
@@ -2156,7 +2451,7 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
             </div>
           </Field>
         )}
-
+ 
         {mode === 'assigned' && (
           <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-amber-50 border-amber-300' : 'bg-stone-50 border-stone-200 hover:border-stone-300'}`}>
             <input type="checkbox" checked={isRequiredForExtras}
@@ -2172,7 +2467,7 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
             </div>
           </label>
         )}
-
+ 
         <button disabled={!canSubmit}
                 onClick={() => onSave({
                   title: title.trim(),
@@ -2190,7 +2485,7 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function AddGoalModal({ kid, onAdd, onClose }) {
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState('20');
@@ -2227,7 +2522,7 @@ function AddGoalModal({ kid, onAdd, onClose }) {
     </ModalShell>
   );
 }
-
+ 
 function ConfirmDeleteModal({ item, onConfirm, onCancel }) {
   return (
     <ModalShell onClose={onCancel} title="Are you sure?">
@@ -2251,7 +2546,7 @@ function ConfirmDeleteModal({ item, onConfirm, onCancel }) {
     </ModalShell>
   );
 }
-
+ 
 function Field({ label, children }) {
   return (
     <div>
@@ -2260,7 +2555,7 @@ function Field({ label, children }) {
     </div>
   );
 }
-
+ 
 function NavButton({ icon, label, active, onClick, badge }) {
   return (
     <button onClick={onClick} className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all relative ${active ? 'text-amber-600' : 'text-stone-400 hover:text-stone-700'}`}>
@@ -2273,7 +2568,7 @@ function NavButton({ icon, label, active, onClick, badge }) {
     </button>
   );
 }
-
+ 
 function FullPageSpinner() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)' }}>
@@ -2284,7 +2579,7 @@ function FullPageSpinner() {
     </div>
   );
 }
-
+ 
 function ErrorScreen({ message, onRetry }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
