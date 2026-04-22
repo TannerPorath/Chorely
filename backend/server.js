@@ -4,19 +4,19 @@ import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import fs from 'fs';
-
+ 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
+ 
 // ============ DATABASE SETUP ============
 const DATA_DIR = process.env.DATA_DIR || '/data';
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-
+ 
 const DB_PATH = path.join(DATA_DIR, 'chorely.db');
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
-
+ 
 // Schema
 db.exec(`
   CREATE TABLE IF NOT EXISTS parents (
@@ -26,7 +26,7 @@ db.exec(`
     pin TEXT NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
-
+ 
   CREATE TABLE IF NOT EXISTS kids (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -36,7 +36,7 @@ db.exec(`
     weekly_allowance REAL DEFAULT 0,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
-
+ 
   CREATE TABLE IF NOT EXISTS chores (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
@@ -49,7 +49,7 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (assigned_to) REFERENCES kids(id) ON DELETE CASCADE
   );
-
+ 
   CREATE TABLE IF NOT EXISTS completions (
     id TEXT PRIMARY KEY,
     chore_id TEXT NOT NULL,
@@ -60,11 +60,11 @@ db.exec(`
     FOREIGN KEY (chore_id) REFERENCES chores(id) ON DELETE CASCADE,
     FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
   );
-
+ 
   CREATE INDEX IF NOT EXISTS idx_completions_kid_date ON completions(kid_id, date);
   CREATE INDEX IF NOT EXISTS idx_completions_status ON completions(status);
   CREATE INDEX IF NOT EXISTS idx_completions_chore_date ON completions(chore_id, date);
-
+ 
   CREATE TABLE IF NOT EXISTS goals (
     id TEXT PRIMARY KEY,
     kid_id TEXT NOT NULL,
@@ -75,7 +75,7 @@ db.exec(`
     completed_at TEXT,
     FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
   );
-
+ 
   CREATE TABLE IF NOT EXISTS payouts (
     id TEXT PRIMARY KEY,
     kid_id TEXT NOT NULL,
@@ -85,11 +85,27 @@ db.exec(`
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
   );
-
+ 
+  -- "Other" / custom chore entries. Kids or parents submit these free-form.
+  -- Parent approves and sets the value. If icon is null, UI picks a default.
+  CREATE TABLE IF NOT EXISTS custom_completions (
+    id TEXT PRIMARY KEY,
+    kid_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    icon TEXT,
+    value REAL NOT NULL DEFAULT 0,
+    date TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kid_id) REFERENCES kids(id) ON DELETE CASCADE
+  );
+ 
   CREATE INDEX IF NOT EXISTS idx_goals_kid ON goals(kid_id);
   CREATE INDEX IF NOT EXISTS idx_payouts_kid_date ON payouts(kid_id, date);
+  CREATE INDEX IF NOT EXISTS idx_custom_completions_kid_date ON custom_completions(kid_id, date);
+  CREATE INDEX IF NOT EXISTS idx_custom_completions_status ON custom_completions(status);
 `);
-
+ 
 // ============ MIGRATION: make chores.assigned_to nullable if it isn't already ============
 // SQLite can't ALTER COLUMN, so we check and rebuild the table if needed.
 const choreColInfo = db.prepare("PRAGMA table_info(chores)").all();
@@ -114,7 +130,7 @@ if (assignedToCol && assignedToCol.notnull === 1) {
     COMMIT;
   `);
 }
-
+ 
 // ============ MIGRATION: add is_required_for_extras column if missing ============
 const hasRequiredCol = db.prepare("PRAGMA table_info(chores)").all()
   .some(c => c.name === 'is_required_for_extras');
@@ -122,7 +138,7 @@ if (!hasRequiredCol) {
   console.log('Adding is_required_for_extras column to chores...');
   db.exec("ALTER TABLE chores ADD COLUMN is_required_for_extras INTEGER NOT NULL DEFAULT 0");
 }
-
+ 
 // ============ MIGRATION: add max_claimers column if missing ============
 const hasMaxClaimersCol = db.prepare("PRAGMA table_info(chores)").all()
   .some(c => c.name === 'max_claimers');
@@ -130,15 +146,15 @@ if (!hasMaxClaimersCol) {
   console.log('Adding max_claimers column to chores...');
   db.exec("ALTER TABLE chores ADD COLUMN max_claimers INTEGER NOT NULL DEFAULT 1");
 }
-
+ 
 // ============ SEED DEFAULTS (only on first run) ============
 const parentCount = db.prepare('SELECT COUNT(*) as c FROM parents').get().c;
 if (parentCount === 0) {
   console.log('First run: seeding default family. Default PIN for parents is 1234 — change it in the Manage tab!');
-
+ 
   db.prepare('INSERT INTO parents (id, name, avatar, pin) VALUES (?, ?, ?, ?)').run('p_tanner', 'Tanner', '👨', '1234');
   db.prepare('INSERT INTO parents (id, name, avatar, pin) VALUES (?, ?, ?, ?)').run('p_kelsey', 'Kelsey', '👩', '1234');
-
+ 
   db.prepare('INSERT INTO kids (id, name, avatar, color, age, weekly_allowance) VALUES (?, ?, ?, ?, ?, ?)').run(
     'k_stella', 'Stella', '🦊', '#EC4899', 10, 5
   );
@@ -148,7 +164,7 @@ if (parentCount === 0) {
   db.prepare('INSERT INTO kids (id, name, avatar, color, age, weekly_allowance) VALUES (?, ?, ?, ?, ?, ?)').run(
     'k_nixon', 'Nixon', '🦁', '#F59E0B', 6, 3
   );
-
+ 
   // Some starter chores (assigned)
   const starterChores = [
     ['Make bed', '🛏️', 0.5, 'k_stella', 'daily'],
@@ -162,7 +178,7 @@ if (parentCount === 0) {
   ];
   const stmt = db.prepare('INSERT INTO chores (id, title, icon, value, assigned_to, frequency) VALUES (?, ?, ?, ?, ?, ?)');
   starterChores.forEach((c, i) => stmt.run(`c_seed_${i}`, ...c));
-
+ 
   // Extra Chores (shared pool, first come first served)
   const extraChores = [
     ['Unload dishwasher', '🍴', 1, null, 'daily'],
@@ -172,10 +188,10 @@ if (parentCount === 0) {
   ];
   extraChores.forEach((c, i) => stmt.run(`c_extra_${i}`, ...c));
 }
-
+ 
 // ============ HELPERS ============
 const genId = (prefix) => `${prefix}_${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
-
+ 
 function rowToKid(r) {
   return { id: r.id, name: r.name, avatar: r.avatar, color: r.color, age: r.age, weeklyAllowance: r.weekly_allowance };
 }
@@ -199,18 +215,24 @@ function rowToGoal(r) {
 function rowToPayout(r) {
   return { id: r.id, kidId: r.kid_id, amount: r.amount, note: r.note, date: r.date, createdAt: r.created_at };
 }
-
+function rowToCustomCompletion(r) {
+  return {
+    id: r.id, kidId: r.kid_id, title: r.title, icon: r.icon,
+    value: r.value, date: r.date, status: r.status, createdAt: r.created_at,
+  };
+}
+ 
 // ============ APP ============
 const app = express();
 app.use(cors());
 app.use(express.json());
-
+ 
 // Serve static frontend
 const FRONTEND_DIR = path.join(__dirname, 'public');
 if (fs.existsSync(FRONTEND_DIR)) {
   app.use(express.static(FRONTEND_DIR));
 }
-
+ 
 // ----- Auth: verify parent PIN -----
 app.post('/api/parents/verify', (req, res) => {
   const { id, pin } = req.body;
@@ -219,7 +241,7 @@ app.post('/api/parents/verify', (req, res) => {
   if (p.pin !== String(pin)) return res.status(401).json({ error: 'bad pin' });
   res.json({ ok: true, parent: rowToParent(p) });
 });
-
+ 
 // ----- Update parent PIN -----
 app.put('/api/parents/:id/pin', (req, res) => {
   const { currentPin, newPin } = req.body;
@@ -230,7 +252,7 @@ app.put('/api/parents/:id/pin', (req, res) => {
   db.prepare('UPDATE parents SET pin = ? WHERE id = ?').run(String(newPin), req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Family (everything in one shot) -----
 app.get('/api/family', (req, res) => {
   const parents = db.prepare('SELECT * FROM parents ORDER BY created_at').all().map(rowToParent);
@@ -239,9 +261,10 @@ app.get('/api/family', (req, res) => {
   const completions = db.prepare('SELECT * FROM completions ORDER BY date DESC').all().map(rowToCompletion);
   const goals = db.prepare('SELECT * FROM goals ORDER BY created_at').all().map(rowToGoal);
   const payouts = db.prepare('SELECT * FROM payouts ORDER BY date DESC').all().map(rowToPayout);
-  res.json({ parents, kids, chores, completions, goals, payouts });
+  const customCompletions = db.prepare('SELECT * FROM custom_completions ORDER BY date DESC').all().map(rowToCustomCompletion);
+  res.json({ parents, kids, chores, completions, goals, payouts, customCompletions });
 });
-
+ 
 // ----- Parents CRUD -----
 app.post('/api/parents', (req, res) => {
   const { name, avatar, pin } = req.body;
@@ -251,14 +274,14 @@ app.post('/api/parents', (req, res) => {
   db.prepare('INSERT INTO parents (id, name, avatar, pin) VALUES (?, ?, ?, ?)').run(id, name, avatar, String(pin));
   res.json(rowToParent(db.prepare('SELECT * FROM parents WHERE id = ?').get(id)));
 });
-
+ 
 app.delete('/api/parents/:id', (req, res) => {
   const remaining = db.prepare('SELECT COUNT(*) as c FROM parents').get().c;
   if (remaining <= 1) return res.status(400).json({ error: 'must have at least one parent' });
   db.prepare('DELETE FROM parents WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Kids CRUD -----
 app.post('/api/kids', (req, res) => {
   const { name, avatar, color, age, weeklyAllowance } = req.body;
@@ -269,7 +292,7 @@ app.post('/api/kids', (req, res) => {
   );
   res.json(rowToKid(db.prepare('SELECT * FROM kids WHERE id = ?').get(id)));
 });
-
+ 
 app.put('/api/kids/:id', (req, res) => {
   const { name, avatar, color, age, weeklyAllowance } = req.body;
   db.prepare('UPDATE kids SET name=?, avatar=?, color=?, age=?, weekly_allowance=? WHERE id=?').run(
@@ -279,15 +302,15 @@ app.put('/api/kids/:id', (req, res) => {
   if (!r) return res.status(404).json({ error: 'not found' });
   res.json(rowToKid(r));
 });
-
+ 
 app.delete('/api/kids/:id', (req, res) => {
   db.prepare('DELETE FROM kids WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Chores CRUD -----
 const VALID_FREQUENCIES = ['daily', 'weekly', 'biweekly', 'monthly'];
-
+ 
 app.post('/api/chores', (req, res) => {
   const { title, icon, value, assignedTo, frequency, isRequiredForExtras, maxClaimers } = req.body;
   if (!title || !icon || value == null) return res.status(400).json({ error: 'missing fields' });
@@ -301,7 +324,7 @@ app.post('/api/chores', (req, res) => {
   );
   res.json(rowToChore(db.prepare('SELECT * FROM chores WHERE id = ?').get(id)));
 });
-
+ 
 app.put('/api/chores/:id', (req, res) => {
   const { title, icon, value, assignedTo, frequency, isRequiredForExtras, maxClaimers } = req.body;
   const existing = db.prepare('SELECT * FROM chores WHERE id = ?').get(req.params.id);
@@ -318,12 +341,12 @@ app.put('/api/chores/:id', (req, res) => {
   const r = db.prepare('SELECT * FROM chores WHERE id = ?').get(req.params.id);
   res.json(rowToChore(r));
 });
-
+ 
 app.delete('/api/chores/:id', (req, res) => {
   db.prepare('DELETE FROM chores WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Completions CRUD -----
 // Computes the inclusive start date string for a given chore's current period,
 // based on its frequency. 'date' is a YYYY-MM-DD string (the completion date).
@@ -353,21 +376,21 @@ function periodStart(frequency, dateStr) {
   }
   return dateStr;
 }
-
+ 
 app.post('/api/completions', (req, res) => {
   const { choreId, kidId, date, status } = req.body;
   if (!choreId || !kidId || !date) return res.status(400).json({ error: 'missing fields' });
-
+ 
   const chore = db.prepare('SELECT * FROM chores WHERE id = ?').get(choreId);
   if (!chore) return res.status(404).json({ error: 'chore not found' });
-
+ 
   // If the same kid already has a non-rejected claim for this chore in its current period, return it
   const windowStart = periodStart(chore.frequency, date);
   const mine = db.prepare(
     "SELECT * FROM completions WHERE chore_id=? AND kid_id=? AND date >= ? AND status IN ('pending','approved')"
   ).get(choreId, kidId, windowStart);
   if (mine) return res.json(rowToCompletion(mine));
-
+ 
   // For shared/Extra Chores (assigned_to IS NULL), enforce max_claimers within the period.
   if (chore.assigned_to === null) {
     const maxClaimers = chore.max_claimers || 1;
@@ -383,14 +406,14 @@ app.post('/api/completions', (req, res) => {
       });
     }
   }
-
+ 
   const id = genId('comp');
   db.prepare('INSERT INTO completions (id, chore_id, kid_id, date, status) VALUES (?, ?, ?, ?, ?)').run(
     id, choreId, kidId, date, status || 'pending'
   );
   res.json(rowToCompletion(db.prepare('SELECT * FROM completions WHERE id = ?').get(id)));
 });
-
+ 
 app.put('/api/completions/:id', (req, res) => {
   const { status } = req.body;
   if (!['pending', 'approved', 'rejected'].includes(status)) return res.status(400).json({ error: 'bad status' });
@@ -399,12 +422,12 @@ app.put('/api/completions/:id', (req, res) => {
   if (!r) return res.status(404).json({ error: 'not found' });
   res.json(rowToCompletion(r));
 });
-
+ 
 app.delete('/api/completions/:id', (req, res) => {
   db.prepare('DELETE FROM completions WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Goals CRUD -----
 app.post('/api/goals', (req, res) => {
   const { kidId, title, icon, target } = req.body;
@@ -415,7 +438,7 @@ app.post('/api/goals', (req, res) => {
   );
   res.json(rowToGoal(db.prepare('SELECT * FROM goals WHERE id = ?').get(id)));
 });
-
+ 
 app.put('/api/goals/:id', (req, res) => {
   const { title, icon, target, completedAt } = req.body;
   const existing = db.prepare('SELECT * FROM goals WHERE id = ?').get(req.params.id);
@@ -429,12 +452,12 @@ app.put('/api/goals/:id', (req, res) => {
   );
   res.json(rowToGoal(db.prepare('SELECT * FROM goals WHERE id = ?').get(req.params.id)));
 });
-
+ 
 app.delete('/api/goals/:id', (req, res) => {
   db.prepare('DELETE FROM goals WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
 // ----- Payouts CRUD -----
 // Record that a parent paid a kid $amount (zeroes their unpaid balance by that amount)
 app.post('/api/payouts', (req, res) => {
@@ -448,15 +471,57 @@ app.post('/api/payouts', (req, res) => {
   );
   res.json(rowToPayout(db.prepare('SELECT * FROM payouts WHERE id = ?').get(id)));
 });
-
+ 
 app.delete('/api/payouts/:id', (req, res) => {
   db.prepare('DELETE FROM payouts WHERE id = ?').run(req.params.id);
   res.json({ ok: true });
 });
-
+ 
+// ----- Custom ("Other") completions -----
+// Kid or parent submits a free-form chore description. Status starts pending.
+// Parent approves and assigns a value via PUT.
+app.post('/api/custom-completions', (req, res) => {
+  const { kidId, title, icon, date, value, status } = req.body;
+  if (!kidId || !title || !date) return res.status(400).json({ error: 'kidId, title, date required' });
+  const id = genId('cust');
+  db.prepare(`
+    INSERT INTO custom_completions (id, kid_id, title, icon, value, date, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(id, kidId, String(title).slice(0, 200), icon || null, Number(value) || 0, date, status || 'pending');
+  const row = db.prepare('SELECT * FROM custom_completions WHERE id = ?').get(id);
+  res.json(rowToCustomCompletion(row));
+});
+ 
+app.put('/api/custom-completions/:id', (req, res) => {
+  const { status, value, title, icon } = req.body;
+  const existing = db.prepare('SELECT * FROM custom_completions WHERE id = ?').get(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'not found' });
+  db.prepare(`
+    UPDATE custom_completions
+    SET status = COALESCE(?, status),
+        value = COALESCE(?, value),
+        title = COALESCE(?, title),
+        icon = COALESCE(?, icon)
+    WHERE id = ?
+  `).run(
+    status ?? null,
+    value === undefined ? null : Number(value),
+    title === undefined ? null : String(title).slice(0, 200),
+    icon === undefined ? null : icon,
+    req.params.id
+  );
+  const row = db.prepare('SELECT * FROM custom_completions WHERE id = ?').get(req.params.id);
+  res.json(rowToCustomCompletion(row));
+});
+ 
+app.delete('/api/custom-completions/:id', (req, res) => {
+  db.prepare('DELETE FROM custom_completions WHERE id = ?').run(req.params.id);
+  res.json({ ok: true });
+});
+ 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
-
+ 
 // SPA fallback — any non-API route serves index.html
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) return res.status(404).json({ error: 'not found' });
@@ -464,9 +529,10 @@ app.get('*', (req, res) => {
   if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
   res.status(404).send('Frontend not built yet');
 });
-
+ 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Chorely running on port ${PORT}`);
   console.log(`Database: ${DB_PATH}`);
 });
+ 
