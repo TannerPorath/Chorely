@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Check, Plus, X, Home, Clock, History, Settings, Trash2, Trophy, AlertCircle, KeyRound, Loader2, Pencil, Sparkles, Lock, Flame, Target, Wallet, DollarSign } from 'lucide-react';
+import { Glass, GlassPill } from './components/Glass.jsx';
+import PillButton from './components/PillButton.jsx';
+import Tag from './components/Tag.jsx';
+import ProgressRing from './components/ProgressRing.jsx';
+import KidCard from './components/KidCard.jsx';
+import ApprovalRow from './components/ApprovalRow.jsx';
 
 // Chore icons — grouped by category for readability (the UI shows them in a grid)
 const EMOJI_OPTIONS = [
@@ -69,7 +75,7 @@ const CADENCE_LABELS = {
   biweekly: 'Every 2 weeks',
   monthly:  'Once a month · resets the 1st',
 };
-const COLORS = ['#F59E0B', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316'];
+const COLORS = ['var(--u)', '#10B981', '#3B82F6', '#EC4899', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316'];
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
@@ -557,29 +563,33 @@ export default function App() {
   const pendingCount = getPendingApprovals().length + getPendingCustomApprovals().length;
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen relative overflow-hidden" style={{ '--u': currentUser.color || '#FFC233', background: '#0A0908' }}>
+      {/* Ambient color blobs — pulled from current user */}
+      <div className="blob blob-a" style={{ background: currentUser.color || '#FFC233', top: '-6rem', left: '-6rem' }} />
+      <div className="blob blob-b" style={{ background: family.kids[0]?.color || '#EC4899', top: '40%', right: '-8rem' }} />
+      <div className="blob blob-c" style={{ background: family.kids[1]?.color || '#0EA5E9', bottom: '-6rem', left: '20%' }} />
+
       {/* Header */}
-      <header className="bg-white border-b border-stone-200 sticky top-0 z-30">
+      <header className="bg-black/40 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-2xl"
-                 style={{ background: currentUser.role === 'parent' ? '#FEF3C7' : currentUser.color + '20' }}>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'var(--u-tint)' }}>
               {currentUser.avatar}
             </div>
             <div>
-              <div className="text-xs text-stone-500 font-semibold uppercase tracking-wider">
+              <div className="mono-up text-ink-300">
                 {currentUser.role === 'parent' ? 'Parent' : 'Kid'}
               </div>
-              <div className="display-font text-xl font-bold text-stone-900 leading-none">Hi, {currentUser.name}</div>
+              <div className="display-font text-xl font-bold text-white leading-none">Hi, {currentUser.name}</div>
             </div>
           </div>
-          <button onClick={logout} className="text-sm font-semibold text-stone-500 hover:text-stone-900 px-3 py-2 rounded-xl hover:bg-stone-100 transition">
+          <button onClick={logout} className="text-sm font-semibold text-ink-300 hover:text-white px-3 py-2 rounded-xl hover:bg-white/10 transition">
             Switch
           </button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 pb-28 pt-6">
+      <main className="max-w-5xl mx-auto px-4 pb-28 pt-6 relative z-10">
         {screen === 'dashboard' && (
           <Dashboard
             currentUser={currentUser}
@@ -620,7 +630,7 @@ export default function App() {
       </main>
 
       {/* Bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <nav className="fixed bottom-0 left-0 right-0 bg-black/50 backdrop-blur-xl border-t border-white/10 z-30" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-5xl mx-auto px-2 py-2 flex justify-around">
           <NavButton icon={<Home size={22} />} label="Today" active={screen === 'dashboard'} onClick={() => setScreen('dashboard')} />
           {currentUser.role === 'parent' && (
@@ -652,29 +662,46 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
     }
   };
 
+  // Build ambient blob colors from family — kids first, then parents, fallback to brand palette.
+  const blobColors = [
+    family.kids[0]?.color, family.kids[1]?.color, family.kids[2]?.color,
+    family.parents[0]?.color, '#FFC233', '#EC4899', '#0EA5E9',
+  ].filter(Boolean);
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCA5A5 100%)' }}>
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-5 float-in">
-          <h1 className="display-font text-4xl font-black text-stone-900 leading-none">
-            <span className="text-3xl mr-1">⭐</span>Chorely
-          </h1>
-          <p className="text-stone-700 text-sm font-semibold mt-1">Who's using the app?</p>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{ background: '#0A0908' }}>
+      {/* Floating ambient color blobs */}
+      <div className="blob blob-a" style={{ background: blobColors[0] || '#FFC233', top: '-4rem', left: '-4rem' }} />
+      <div className="blob blob-b" style={{ background: blobColors[1] || '#EC4899', top: '6rem', right: '-6rem' }} />
+      <div className="blob blob-c" style={{ background: blobColors[2] || '#0EA5E9', bottom: '-6rem', left: '30%' }} />
+      {blobColors[3] && <div className="blob blob-a" style={{ background: blobColors[3], bottom: '20%', right: '20%', animationDelay: '4s' }} />}
+
+      <div className="max-w-2xl w-full relative z-10">
+        <div className="text-center mb-6 float-in">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full glass mb-3">
+            <span className="text-base leading-none">⭐</span>
+            <span className="mono-up text-ink-700">Family Edition</span>
+          </div>
+          <h1 className="display-font text-5xl md:text-6xl font-black text-ink-900 tracking-tight leading-none">Chorely</h1>
+          <p className="text-ink-700 text-sm font-semibold mt-2">Who's using the app?</p>
         </div>
 
-        <div className="bg-white/70 backdrop-blur-xl rounded-3xl p-4 md:p-5 shadow-2xl border border-white/50 float-in" style={{ animationDelay: '0.1s' }}>
+        <Glass strong className="rounded-3xl p-4 md:p-5 float-in space-y-5" style={{ animationDelay: '0.1s' }}>
           {family.parents.length > 0 && (
-            <div className="mb-4">
-              <div className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2 px-1">Parents</div>
+            <div>
+              <div className="mono-up text-ink-500 mb-2 px-1">Parents</div>
               <div className="flex gap-2 flex-wrap">
                 {family.parents.map(p => (
-                  <button key={p.id} onClick={() => onSelectProfile(p, 'parent')}
-                    className="flex-1 min-w-[120px] bg-white hover:bg-stone-50 rounded-2xl px-3 py-2 flex items-center gap-2 shadow-sm hover:shadow-md transition-all border-2 border-transparent hover:border-stone-300"
-                    style={{ '--hover-color': p.color || '#F59E0B' }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: (p.color || '#F59E0B') + '20' }}>{p.avatar}</div>
+                  <button
+                    key={p.id}
+                    onClick={() => onSelectProfile(p, 'parent')}
+                    className="glass-tile flex-1 min-w-[140px] rounded-2xl px-3 py-2.5 flex items-center gap-2.5"
+                    style={{ '--u': p.color || '#FFC233' }}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'var(--u-tint)' }}>{p.avatar}</div>
                     <div className="text-left min-w-0 flex-1">
-                      <div className="font-bold text-stone-900 truncate text-sm">{p.name}</div>
-                      <div className="text-[10px] text-stone-500 font-semibold flex items-center gap-1"><KeyRound size={9} /> PIN</div>
+                      <div className="font-bold text-ink-900 truncate text-sm">{p.name}</div>
+                      <div className="mono-up text-ink-500 mt-0.5 flex items-center gap-1"><KeyRound size={9} /> PIN</div>
                     </div>
                   </button>
                 ))}
@@ -683,33 +710,41 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
           )}
 
           <div>
-            <div className="text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2 px-1">Kids</div>
+            <div className="mono-up text-ink-500 mb-2 px-1">Kids</div>
             {family.kids.length === 0 ? (
-              <div className="text-center py-6 text-stone-500 font-semibold text-sm">No kids added yet.</div>
+              <div className="text-center py-6 text-ink-500 font-semibold text-sm">No kids added yet.</div>
             ) : (
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-2.5">
                 {family.kids.map(k => (
-                  <button key={k.id} onClick={() => onSelectProfile(k, 'kid')}
-                    className="bg-white hover:bg-stone-50 rounded-2xl p-3 flex flex-col items-center gap-1.5 shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 border-2 border-transparent"
-                    onMouseEnter={(e) => e.currentTarget.style.borderColor = k.color}
-                    onMouseLeave={(e) => e.currentTarget.style.borderColor = 'transparent'}>
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: k.color + '20' }}>{k.avatar}</div>
-                    <div className="font-bold text-stone-900 text-sm leading-tight">{k.name}</div>
+                  <button
+                    key={k.id}
+                    onClick={() => onSelectProfile(k, 'kid')}
+                    className="glass-tile relative overflow-hidden rounded-2xl p-3 flex flex-col items-center gap-1.5"
+                    style={{ '--u': k.color }}
+                  >
+                    <span className="absolute inset-x-0 top-0 h-[3px]" style={{ background: 'var(--u)' }} />
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: 'var(--u-tint)' }}>{k.avatar}</div>
+                    <div className="font-bold text-ink-900 text-sm leading-tight">{k.name}</div>
                   </button>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </Glass>
       </div>
 
       {pinTarget && (
-        <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={onCancelPin}>
-          <div className={`bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl pop-in ${pinError ? 'shake' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-ink-900/30 backdrop-blur-2xl flex items-center justify-center p-4 z-50" onClick={onCancelPin}>
+          <Glass
+            strong
+            className={`rounded-3xl p-8 max-w-sm w-full pop-in ${pinError ? 'shake' : ''}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{ '--u': pinTarget.color || '#FFC233' }}
+          >
             <div className="text-center mb-6">
-              <div className="text-5xl mb-2">{pinTarget.avatar}</div>
-              <h2 className="display-font text-2xl font-black text-stone-900">Enter PIN</h2>
-              <p className="text-sm text-stone-500 mt-1">Hi, {pinTarget.name}</p>
+              <div className="w-16 h-16 mx-auto rounded-2xl grid place-items-center text-4xl mb-3 shadow-glow" style={{ background: 'var(--u-tint)' }}>{pinTarget.avatar}</div>
+              <h2 className="display-font text-2xl font-black text-ink-900">Hi, {pinTarget.name}</h2>
+              <p className="mono-up text-ink-500 mt-1">Enter your PIN</p>
             </div>
             <input
               type="password" inputMode="numeric" pattern="[0-9]*"
@@ -717,14 +752,14 @@ function LoginScreen({ family, onSelectProfile, pinTarget, onSubmitPin, onCancel
               onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
               onKeyDown={(e) => e.key === 'Enter' && doSubmit()}
               autoFocus
-              className="w-full text-center text-3xl font-black tracking-[1em] bg-stone-100 rounded-2xl py-4 mb-4 outline-none focus:ring-4 focus:ring-amber-300"
+              className="w-full text-center text-4xl mono font-extrabold tracking-[0.6em] bg-white/60 backdrop-blur rounded-2xl py-5 mb-5 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 border border-white/70"
               placeholder="••••" maxLength={4}
             />
             <div className="flex gap-3">
-              <button onClick={onCancelPin} className="flex-1 py-3 rounded-2xl font-bold bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Cancel</button>
-              <button onClick={doSubmit} className="flex-1 py-3 rounded-2xl font-bold bg-amber-400 hover:bg-amber-500 text-stone-900 transition shadow-lg shadow-amber-200">Enter</button>
+              <PillButton kind="ghost" className="flex-1" onClick={onCancelPin}>Cancel</PillButton>
+              <PillButton kind="primary" className="flex-1" onClick={doSubmit}>Enter</PillButton>
             </div>
-          </div>
+          </Glass>
         </div>
       )}
     </div>
@@ -750,14 +785,42 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
     return (
       <div className="space-y-6">
         <div className="slide-up">
-          <div className="text-sm font-bold text-stone-500 uppercase tracking-wider">{dateStr}</div>
-          <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900 mt-1">Today's Progress</h2>
+          <div className="mono-up text-ink-300">{dateStr}</div>
+          <h2 className="display-font text-3xl md:text-4xl font-black text-white mt-1">Today's Progress</h2>
         </div>
         {family.kids.length === 0 && (
-          <div className="bg-white rounded-3xl p-12 text-center slide-up">
+          <div className="glass-strong rounded-3xl p-12 text-center slide-up">
             <div className="text-5xl mb-3">👶</div>
-            <div className="font-bold text-stone-900">No kids yet</div>
-            <div className="text-sm text-stone-500 mt-1">Add a family member in the Manage tab.</div>
+            <div className="font-bold text-ink-900">No kids yet</div>
+            <div className="text-sm text-ink-500 mt-1">Add a family member in the Manage tab.</div>
+          </div>
+        )}
+        {family.kids.length > 0 && (
+          <div className="slide-up -mx-4" style={{ animationDelay: '0.04s' }}>
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar px-4 pb-2">
+              {family.kids.map(kid => {
+                const kchores = getChoresForKid(kid.id);
+                const kdaily = kchores.filter(c => c.frequency === 'daily');
+                const kdone = kdaily.filter(c => isChoreCompletedToday(c.id, kid.id)).length;
+                const kbalance = getCurrentBalance ? getCurrentBalance(kid.id) : 0;
+                const kstreak = getStreak ? getStreak(kid.id) : { current: 0 };
+                return (
+                  <KidCard
+                    key={kid.id}
+                    kid={{
+                      id: kid.id,
+                      name: kid.name,
+                      avatar: kid.avatar,
+                      color: kid.color,
+                      age: kid.age ?? '',
+                      balance: kbalance,
+                      streak: kstreak.current,
+                      weekProgress: kdaily.length > 0 ? kdone / kdaily.length : 0,
+                    }}
+                  />
+                );
+              })}
+            </div>
           </div>
         )}
         {family.kids.map((kid, i) => {
@@ -790,23 +853,23 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           if (allOthers.length === 0) return null;
           return (
             <div className="slide-up" style={{ animationDelay: '0.28s' }}>
-              <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-4 space-y-2">
-                <div className="text-xs font-black uppercase tracking-wider text-amber-800 mb-2">✨ "Other" Submissions</div>
+              <div className="bg-[color:var(--u-tint)] border border-ink-200 rounded-3xl p-4 space-y-2">
+                <div className="mono-up text-ink-700 mb-2">✨ "Other" Submissions</div>
                 {allOthers.map(cc => {
                   const kid = family.kids.find(k => k.id === cc.kidId);
                   if (!kid) return null;
                   return (
-                    <div key={cc.id} className={`rounded-2xl px-4 py-3 flex items-center gap-3 ${cc.status === 'rejected' ? 'bg-red-50' : cc.status === 'approved' ? 'bg-emerald-50' : 'bg-white'}`}>
+                    <div key={cc.id} className={`rounded-2xl px-4 py-3 flex items-center gap-3 ${cc.status === 'rejected' ? 'bg-red-50' : cc.status === 'approved' ? 'bg-emerald-50' : 'bg-white'}`} style={{ '--u': kid.color }}>
                       <div className={`text-xl ${cc.status === 'rejected' ? 'opacity-40' : ''}`}>{cc.icon || '✨'}</div>
                       <div className="flex-1 min-w-0">
-                        <div className={`font-bold truncate ${cc.status === 'rejected' ? 'text-stone-400 line-through' : 'text-stone-900'}`}>{cc.title}</div>
-                        <div className="text-xs text-stone-500 font-semibold flex items-center gap-1">
-                          <span>{kid.avatar}</span><span>{kid.name}</span><span>·</span><span>{cc.date}</span>
+                        <div className={`font-bold truncate ${cc.status === 'rejected' ? 'text-ink-500 line-through' : 'text-ink-900'}`}>{cc.title}</div>
+                        <div className="mono text-[11px] text-ink-500 font-semibold flex items-center gap-1 mt-0.5">
+                          <span>{kid.avatar}</span><span>{kid.name.toUpperCase()}</span><span>·</span><span>{cc.date}</span>
                         </div>
                       </div>
-                      {cc.status === 'pending' && <div className="text-xs font-black text-amber-600 bg-amber-100 border border-amber-300 px-2 py-1 rounded-full flex-shrink-0">⏳ Pending</div>}
-                      {cc.status === 'approved' && <div className="font-black text-emerald-600 flex-shrink-0">+${(cc.value || 0).toFixed(2)}</div>}
-                      {cc.status === 'rejected' && <div className="text-xs font-black text-red-400 bg-red-100 px-2 py-1 rounded-full flex-shrink-0">✗ Rejected</div>}
+                      {cc.status === 'pending' && <Tag tone="warn">⏳ Pending</Tag>}
+                      {cc.status === 'approved' && <span className="mono font-extrabold text-emerald-600 flex-shrink-0">+${(cc.value || 0).toFixed(2)}</span>}
+                      {cc.status === 'rejected' && <Tag tone="bad">✗ Rejected</Tag>}
                     </div>
                   );
                 })}
@@ -837,11 +900,11 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
           <div className="slide-up" style={{ animationDelay: '0.35s' }}>
             <button
               onClick={() => setOtherForKidId('__picker__')}
-              className="w-full bg-white hover:bg-stone-50 border-2 border-dashed border-stone-300 hover:border-amber-300 rounded-3xl p-4 flex items-center justify-center gap-3 transition group"
+              className="w-full glass border border-dashed border-white/20 hover:border-brand rounded-3xl p-4 flex items-center justify-center gap-3 transition group"
             >
               <div className="text-2xl">✨</div>
-              <div className="display-font text-base font-black text-stone-900">Log an "Other" for a kid</div>
-              <Plus size={20} className="text-stone-400 group-hover:text-amber-500 ml-auto" strokeWidth={3} />
+              <div className="display-font text-base font-black text-ink-900">Log an "Other" for a kid</div>
+              <Plus size={20} className="text-ink-500 group-hover:text-ink-900 ml-auto" strokeWidth={3} />
             </button>
           </div>
         )}
@@ -881,46 +944,51 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
   return (
     <div className="space-y-6">
       <div className="slide-up">
-        <div className="text-sm font-bold text-stone-500 uppercase tracking-wider">{dateStr}</div>
-        <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900 mt-1">Let's do this! ✨</h2>
+        <div className="mono-up text-ink-300">{dateStr}</div>
+        <h2 className="display-font text-3xl md:text-4xl font-black text-white mt-1">Let's do this! ✨</h2>
       </div>
 
       <div className="rounded-3xl p-6 text-white slide-up shadow-xl relative overflow-hidden"
-           style={{ background: `linear-gradient(135deg, ${currentUser.color} 0%, ${currentUser.color}DD 100%)`, animationDelay: '0.05s' }}>
+           style={{ background: 'linear-gradient(135deg, var(--u) 0%, color-mix(in oklab, var(--u) 80%, black) 100%)', animationDelay: '0.05s' }}>
         <div className="absolute -right-8 -top-8 text-9xl opacity-10">💰</div>
-        <div className="relative">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div>
-              <div className="text-sm font-black uppercase tracking-widest opacity-80">My Balance</div>
-              <div className="display-font text-5xl md:text-6xl font-black mt-1">${balance.toFixed(2)}</div>
-              <div className="text-sm font-semibold opacity-90 mt-1">Unpaid earnings</div>
-            </div>
+        <div className="relative flex items-start gap-5">
+          <div className="flex-1 min-w-0">
+            <div className="mono-up opacity-80">My Balance</div>
+            <div className="mono font-extrabold text-5xl md:text-6xl tracking-tight mt-1">${balance.toFixed(2)}</div>
+            <div className="text-sm font-semibold opacity-90 mt-1">Unpaid earnings</div>
+          </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            {dailyChores.length > 0 && (
+              <ProgressRing
+                progress={completedToday / dailyChores.length}
+                label={`${completedToday}/${dailyChores.length}`}
+                size={84}
+                stroke={6}
+              />
+            )}
             {streak.current > 0 && (
-              <div className="bg-white/20 backdrop-blur rounded-2xl px-3 py-2 flex items-center gap-2">
-                <Flame size={20} className="text-orange-200" fill="currentColor" />
-                <div>
-                  <div className="text-2xl font-black leading-none">{streak.current}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider opacity-80">week streak</div>
-                </div>
-              </div>
+              <GlassPill className="!text-white">
+                <Flame size={12} fill="currentColor" />
+                {streak.current}w streak
+              </GlassPill>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-4 text-sm font-semibold opacity-90 flex-wrap pt-3 border-t border-white/20">
-            <div>This week: <span className="font-black">${earnings.total.toFixed(2)}</span></div>
-            <div className="opacity-60">·</div>
-            <div>💼 ${earnings.choreEarnings.toFixed(2)}</div>
-            {earnings.extraEarnings > 0 && <div>⭐ ${earnings.extraEarnings.toFixed(2)}</div>}
-            {earnings.allDone && <div>🎁 ${currentUser.weeklyAllowance.toFixed(2)}</div>}
-          </div>
-          {!earnings.allDone && chores.length > 0 && (
-            <div className="mt-2 text-xs font-semibold opacity-80">🎯 Finish all your required chores this week for a ${currentUser.weeklyAllowance} bonus!</div>
-          )}
         </div>
+        <div className="relative flex items-center gap-3 mt-4 text-sm font-semibold opacity-90 flex-wrap pt-3 border-t border-white/20">
+          <div>This week: <span className="mono font-extrabold">${earnings.total.toFixed(2)}</span></div>
+          <div className="opacity-60">·</div>
+          <div>💼 <span className="mono">${earnings.choreEarnings.toFixed(2)}</span></div>
+          {earnings.extraEarnings > 0 && <div>⭐ <span className="mono">${earnings.extraEarnings.toFixed(2)}</span></div>}
+          {earnings.allDone && <div>🎁 <span className="mono">${currentUser.weeklyAllowance.toFixed(2)}</span></div>}
+        </div>
+        {!earnings.allDone && chores.length > 0 && (
+          <div className="relative mt-2 text-xs font-semibold opacity-80">🎯 Finish all your required chores this week for a <span className="mono">${currentUser.weeklyAllowance}</span> bonus!</div>
+        )}
       </div>
 
       {goals.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.08s' }}>
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1 flex items-center gap-1">
+          <div className="mono-up text-ink-300 mb-3 px-1 flex items-center gap-1">
             <Target size={12} /> My savings goals
           </div>
           <div className="space-y-3">
@@ -932,20 +1000,20 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
       )}
 
       {dailyChores.length > 0 && (
-        <div className="bg-white rounded-3xl p-5 shadow-sm slide-up" style={{ animationDelay: '0.1s' }}>
+        <div className="glass-strong rounded-3xl p-5 slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center justify-between mb-2">
-            <div className="font-bold text-stone-900">Today's chores</div>
-            <div className="font-black text-stone-900">{completedToday}/{dailyChores.length}</div>
+            <div className="font-bold text-ink-900">Today's chores</div>
+            <div className="mono font-extrabold text-ink-900">{completedToday}/{dailyChores.length}</div>
           </div>
-          <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: currentUser.color }} />
+          <div className="h-3 bg-ink-50 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progressPct}%`, background: 'var(--u)' }} />
           </div>
         </div>
       )}
 
       {dailyChores.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.15s' }}>
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1">Every day</div>
+          <div className="mono-up text-ink-300 mb-3 px-1">Every day</div>
           <div className="space-y-3">
             {dailyChores.map(chore => (
               <ChoreCard key={chore.id} chore={chore}
@@ -959,7 +1027,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
 
       {weeklyChores.length > 0 && (
         <div className="slide-up" style={{ animationDelay: '0.2s' }}>
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 px-1">This week</div>
+          <div className="mono-up text-ink-300 mb-3 px-1">This week</div>
           <div className="space-y-3">
             {weeklyChores.map(chore => (
               <ChoreCard key={chore.id} chore={chore}
@@ -972,10 +1040,10 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
       )}
 
       {chores.length === 0 && extraChores.length === 0 && (
-        <div className="bg-white rounded-3xl p-12 text-center slide-up">
+        <div className="glass-strong rounded-3xl p-12 text-center slide-up">
           <div className="text-5xl mb-3">🌟</div>
-          <div className="font-bold text-stone-900">No chores yet!</div>
-          <div className="text-sm text-stone-500 mt-1">Ask your parent to add some.</div>
+          <div className="font-bold text-ink-900">No chores yet!</div>
+          <div className="text-sm text-ink-500 mt-1">Ask your parent to add some.</div>
         </div>
       )}
 
@@ -1007,31 +1075,31 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
         const rejected = allOthers.filter(c => c.status === 'rejected');
         return (
           <div className="slide-up" style={{ animationDelay: '0.28s' }}>
-            <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-4 space-y-2">
+            <div className="bg-[color:var(--u-tint)] rounded-3xl p-4 space-y-2">
               <div className="flex items-center gap-2 mb-1">
                 <div className="text-lg">✨</div>
-                <div className="text-xs font-black uppercase tracking-wider text-amber-800">"Other" Submissions</div>
+                <div className="mono-up text-ink-700">"Other" Submissions</div>
               </div>
               {pending.map(cc => (
                 <div key={cc.id} className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3">
                   <div className="text-2xl">{cc.icon || '✨'}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-stone-900 truncate">{cc.title}</div>
-                    <div className="text-xs text-stone-500 font-semibold">Submitted {cc.date}</div>
+                    <div className="font-bold text-ink-900 truncate">{cc.title}</div>
+                    <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">Submitted {cc.date}</div>
                   </div>
-                  <div className="text-xs font-black text-amber-600 bg-amber-100 border border-amber-300 px-2 py-1 rounded-full">⏳ Pending</div>
+                  <Tag tone="warn">⏳ Pending</Tag>
                 </div>
               ))}
               {approved.map(cc => (
                 <div key={cc.id} className="bg-emerald-50 rounded-2xl px-4 py-3 flex items-center gap-3">
                   <div className="text-2xl">{cc.icon || '✨'}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-stone-900 truncate">{cc.title}</div>
-                    <div className="text-xs text-stone-500 font-semibold">{cc.date}</div>
+                    <div className="font-bold text-ink-900 truncate">{cc.title}</div>
+                    <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">{cc.date}</div>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <div className="font-black text-emerald-600">+${(cc.value || 0).toFixed(2)}</div>
-                    <div className="text-[10px] font-black text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">✓ Approved</div>
+                    <div className="mono font-extrabold text-emerald-600">+${(cc.value || 0).toFixed(2)}</div>
+                    <Tag tone="ok">✓ Approved</Tag>
                   </div>
                 </div>
               ))}
@@ -1039,10 +1107,10 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
                 <div key={cc.id} className="bg-red-50 rounded-2xl px-4 py-3 flex items-center gap-3">
                   <div className="text-2xl opacity-40">{cc.icon || '✨'}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-stone-400 line-through truncate">{cc.title}</div>
-                    <div className="text-xs text-stone-400 font-semibold">{cc.date}</div>
+                    <div className="font-bold text-ink-500 line-through truncate">{cc.title}</div>
+                    <div className="mono text-[11px] text-ink-500 font-semibold">{cc.date}</div>
                   </div>
-                  <div className="text-xs font-black text-red-500 bg-red-100 px-2 py-1 rounded-full">✗ Not approved</div>
+                  <Tag tone="bad">✗ Not approved</Tag>
                 </div>
               ))}
             </div>
@@ -1054,14 +1122,14 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
       <div className="slide-up" style={{ animationDelay: '0.3s' }}>
         <button
           onClick={() => setOtherForKidId(currentUser.id)}
-          className="w-full bg-white hover:bg-stone-50 border-2 border-dashed border-stone-300 hover:border-amber-300 rounded-3xl p-5 flex items-center justify-center gap-3 transition group"
+          className="w-full glass border border-dashed border-white/20 hover:border-[color:var(--u)] rounded-3xl p-5 flex items-center justify-center gap-3 transition group"
         >
           <div className="text-3xl">✨</div>
           <div className="text-left">
-            <div className="display-font text-lg font-black text-stone-900">Did something else?</div>
-            <div className="text-xs font-semibold text-stone-500">Submit to your parent — they'll approve and set the amount</div>
+            <div className="display-font text-lg font-black text-ink-900">Did something else?</div>
+            <div className="text-xs font-semibold text-ink-500">Submit to your parent — they'll approve and set the amount</div>
           </div>
-          <Plus size={22} className="text-stone-400 group-hover:text-amber-500 ml-auto" strokeWidth={3} />
+          <Plus size={22} className="text-ink-500 group-hover:text-[color:var(--u)] ml-auto" strokeWidth={3} />
         </button>
       </div>
 
@@ -1088,30 +1156,30 @@ function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtra
   const outstanding = (!isParent && getOutstandingWeeklies) ? getOutstandingWeeklies(currentUser.id) : [];
 
   return (
-    <div className={`rounded-3xl p-5 shadow-sm border-2 ${eligible ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200/50' : 'bg-stone-100 border-stone-200'}`}>
+    <div className={`rounded-3xl p-5 shadow-sm border ${eligible ? 'bg-[color:var(--u-tint)] border-[color:var(--u-tint)]' : 'bg-ink-50 border-ink-200'}`}>
       <div className="flex items-center gap-2 mb-1">
         <div className="text-2xl">{eligible ? '⭐' : '🔒'}</div>
-        <div className="display-font text-xl font-black text-stone-900">{title}</div>
+        <div className="display-font text-xl font-black text-ink-900">{title}</div>
       </div>
-      <div className="text-xs font-semibold text-stone-600 mb-4 ml-9">{subtitle}</div>
+      <div className="text-xs font-semibold text-ink-700 mb-4 ml-9">{subtitle}</div>
 
       {!eligible && (
-        <div className="bg-white rounded-2xl p-4 mb-4 border-2 border-stone-200 flex items-start gap-3">
-          <Lock size={20} className="text-stone-500 flex-shrink-0 mt-0.5" />
+        <div className="bg-white rounded-2xl p-4 mb-4 border border-ink-200 flex items-start gap-3">
+          <Lock size={20} className="text-ink-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <div className="font-black text-stone-900 text-sm">Locked for now</div>
-            <div className="text-xs text-stone-600 font-semibold mt-1">
+            <div className="font-black text-ink-900 text-sm">Locked for now</div>
+            <div className="text-xs text-ink-700 font-semibold mt-1">
               Finish all of your required chores this week to unlock Extra Chores. Staying on top of them last week would have unlocked you automatically!
             </div>
             {outstanding.length > 0 && (
               <>
-                <div className="text-[10px] font-black uppercase tracking-widest text-stone-500 mt-3 mb-1">Still need to do:</div>
+                <div className="mono-up text-ink-500 mt-3 mb-1">Still need to do:</div>
                 <div className="space-y-1">
                   {outstanding.map(chore => (
-                    <div key={chore.id} className="flex items-center gap-2 text-xs font-bold text-stone-700">
+                    <div key={chore.id} className="flex items-center gap-2 text-xs font-bold text-ink-700">
                       <span className="text-base">{chore.icon}</span>
                       <span>{chore.title}</span>
-                      <span className="text-[10px] font-bold text-stone-400 uppercase">· {chore.frequency}</span>
+                      <span className="mono-up text-ink-500">· {chore.frequency}</span>
                     </div>
                   ))}
                 </div>
@@ -1127,7 +1195,7 @@ function ExtraChoresSection({ title, subtitle, extrasByCadence, family, getExtra
         const label = CADENCE_LABELS[cadence];
         return (
           <div key={cadence} className="mb-4 last:mb-0">
-            <div className="text-[10px] font-black uppercase tracking-widest text-amber-700/70 mb-2 px-1">{label}</div>
+            <div className="mono-up text-ink-500 mb-2 px-1">{label}</div>
             <div className="space-y-2">
               {list.map(chore => {
                 const claims = getExtraClaimsInPeriod(chore);
@@ -1185,10 +1253,10 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
   // Visual state keyed off MY claim (for kids) or the overall pool (for parents)
   let bg;
   if (claimedByMe && isApproved) bg = 'bg-emerald-50 border-emerald-200';
-  else if (claimedByMe && isPending) bg = 'bg-amber-100 border-amber-300';
-  else if (isLockedForMe) bg = 'bg-stone-50 border-stone-200 opacity-60';
-  else if (poolFull) bg = 'bg-stone-100 border-stone-200 opacity-75';
-  else bg = 'bg-white border-amber-200 hover:border-amber-400 hover:shadow-md';
+  else if (claimedByMe && isPending) bg = 'bg-[color:var(--u-tint)] border-[color:var(--u)]';
+  else if (isLockedForMe) bg = 'bg-paper border-ink-200 opacity-60';
+  else if (poolFull) bg = 'bg-ink-50 border-ink-200 opacity-75';
+  else bg = 'bg-white border-[color:var(--u-tint)] hover:border-[color:var(--u)] hover:shadow-md';
 
   const myCompDate = myClaim?.date ? new Date(myClaim.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
@@ -1200,65 +1268,59 @@ function ExtraChoreCard({ chore, claims = [], myClaim, family, currentUser, onTo
     >
       <div className="text-2xl flex-shrink-0">{chore.icon}</div>
       <div className="flex-1 min-w-0">
-        <div className={`font-bold text-stone-900 ${claimedByMe && isApproved ? 'line-through opacity-60' : ''}`}>{chore.title}</div>
+        <div className={`font-bold text-ink-900 ${claimedByMe && isApproved ? 'line-through opacity-60' : ''}`}>{chore.title}</div>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <div className="text-xs font-black text-amber-700">${chore.value.toFixed(2)}</div>
+          <div className="mono font-extrabold text-xs text-[color:var(--u)]">${chore.value.toFixed(2)}</div>
 
           {/* Show each claimer as a small badge */}
           {claims.map(c => {
             const k = family.kids.find(kk => kk.id === c.kidId);
             if (!k) return null;
             const isMe = c.kidId === currentUser.id;
-            const statusColor = c.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+            const tone = c.status === 'approved' ? 'ok' : 'brand';
             return (
-              <div key={c.completionId} className={`flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${statusColor}`}>
+              <Tag key={c.completionId} tone={tone}>
                 <span>{k.avatar}</span>
                 <span>{isMe ? 'You' : k.name}</span>
                 {c.status === 'approved' && <Check size={10} strokeWidth={3} />}
-              </div>
+              </Tag>
             );
           })}
 
           {/* My personal claim status takes precedence */}
-          {claimedByMe && isPending && (
-            <div className="text-[10px] font-bold text-amber-800 bg-amber-200 px-2 py-0.5 rounded-full">Awaiting approval</div>
-          )}
+          {claimedByMe && isPending && <Tag tone="warn">Awaiting approval</Tag>}
 
           {/* Pool state for kids who aren't claimed yet */}
           {!claimedByMe && !isParent && (
             <>
               {isLockedForMe && !poolFull && eligible === false && (
-                <div className="text-[10px] font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-full flex items-center gap-0.5"><Lock size={9} /> LOCKED</div>
+                <Tag tone="neutral"><Lock size={9} /> LOCKED</Tag>
               )}
-              {!isLockedForMe && poolFull && (
-                <div className="text-[10px] font-bold text-stone-600 bg-stone-200 px-2 py-0.5 rounded-full">Fully claimed</div>
-              )}
+              {!isLockedForMe && poolFull && <Tag tone="neutral">Fully claimed</Tag>}
               {!isLockedForMe && !poolFull && (
-                <div className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
-                  {maxClaimers === 1 ? 'Up for grabs' : `Up for grabs · ${spotsLeft} of ${maxClaimers} left`}
-                </div>
+                <Tag tone="brand">
+                  {maxClaimers === 1 ? 'Up for grabs' : <>Up for grabs · <span className="mono">{spotsLeft}</span>/<span className="mono">{maxClaimers}</span> left</>}
+                </Tag>
               )}
             </>
           )}
 
           {/* Parent view: show pool stats */}
           {isParent && maxClaimers > 1 && (
-            <div className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-full">
-              {claimCount}/{maxClaimers} claimed
-            </div>
+            <Tag tone="neutral"><span className="mono">{claimCount}/{maxClaimers}</span> claimed</Tag>
           )}
         </div>
       </div>
       <div className={`w-9 h-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-        claimedByMe ? 'border-transparent' : isLockedForMe ? 'border-stone-300' : 'border-amber-400'
+        claimedByMe ? 'border-transparent' : isLockedForMe ? 'border-ink-200' : 'border-[color:var(--u)]'
       }`} style={{
         background: (claimedByMe && isApproved) ? '#10B981'
-                  : (claimedByMe && isPending) ? '#F59E0B'
-                  : poolFull ? '#D6D3D1'
+                  : (claimedByMe && isPending) ? 'var(--u)'
+                  : poolFull ? '#DCD8D1'
                   : 'transparent'
       }}>
         {claimedByMe && <Check size={18} className="text-white" strokeWidth={3} />}
-        {isLockedForMe && !claimedByMe && <Lock size={14} className="text-stone-400" />}
+        {isLockedForMe && !claimedByMe && <Lock size={14} className="text-ink-500" />}
       </div>
     </button>
   );
@@ -1269,44 +1331,44 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
   const [showPayout, setShowPayout] = useState(false);
   const progressPct = totalToday > 0 ? (completedToday / totalToday) * 100 : 0;
   return (
-    <div className="bg-white rounded-3xl overflow-hidden shadow-sm">
+    <div className="glass-strong rounded-3xl overflow-hidden" style={{ '--u': kid.color, borderTop: `3px solid ${kid.color}` }}>
       <div className="p-5">
         <div className="flex items-center gap-4 mb-3">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="font-black text-lg text-stone-900">{kid.name}</div>
+              <div className="font-black text-lg text-ink-900">{kid.name}</div>
               {streak && streak.current > 0 && (
-                <div className="flex items-center gap-1 text-xs font-black text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">
-                  <Flame size={11} fill="currentColor" /> {streak.current}
-                </div>
+                <Tag tone="warn">
+                  <Flame size={11} fill="currentColor" /> <span className="mono">{streak.current}</span>
+                </Tag>
               )}
             </div>
             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-              <div className="text-sm font-semibold text-stone-600">{completedToday}/{totalToday} today</div>
-              <div className="w-1 h-1 rounded-full bg-stone-300" />
-              <div className="text-sm font-black text-emerald-600">${weekTotal.toFixed(2)} this week</div>
+              <div className="text-sm font-semibold text-ink-700"><span className="mono">{completedToday}/{totalToday}</span> today</div>
+              <div className="w-1 h-1 rounded-full bg-ink-200" />
+              <div className="text-sm font-black text-emerald-600 mono">${weekTotal.toFixed(2)} <span className="font-bold">this week</span></div>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2 mb-3">
           <div className="bg-emerald-50 rounded-2xl p-3">
-            <div className="text-[10px] font-black uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+            <div className="mono-up text-emerald-700 flex items-center gap-1">
               <Wallet size={11} /> Balance
             </div>
-            <div className="display-font text-xl font-black text-stone-900 mt-0.5">${(balance || 0).toFixed(2)}</div>
+            <div className="mono font-extrabold text-xl text-ink-900 mt-0.5">${(balance || 0).toFixed(2)}</div>
           </div>
           <button onClick={() => setShowPayout(true)}
                   disabled={!balance || balance <= 0}
-                  className="bg-amber-400 hover:bg-amber-500 disabled:bg-stone-100 disabled:text-stone-400 text-stone-900 rounded-2xl p-3 flex items-center justify-center gap-2 font-black text-sm transition shadow-sm disabled:shadow-none">
+                  className="bg-[color:var(--u)] disabled:bg-ink-50 disabled:text-ink-500 text-white rounded-2xl p-3 flex items-center justify-center gap-2 font-bold text-sm transition shadow-glow disabled:shadow-none active:scale-[0.98]">
             <DollarSign size={16} strokeWidth={3} /> Pay out
           </button>
         </div>
 
         {totalToday > 0 && (
-          <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, background: kid.color }} />
+          <div className="h-2 bg-ink-50 rounded-full overflow-hidden">
+            <div className="h-full rounded-full transition-all" style={{ width: `${progressPct}%`, background: 'var(--u)' }} />
           </div>
         )}
 
@@ -1319,16 +1381,16 @@ function KidDashboardCard({ kid, chores, completedToday, totalToday, weekTotal, 
         )}
 
         <button onClick={() => setExpanded(!expanded)}
-                className="w-full mt-3 py-2 text-xs font-black text-stone-500 hover:text-stone-900 transition flex items-center justify-center gap-1">
+                className="w-full mt-3 py-2 text-xs font-black text-ink-500 hover:text-ink-900 transition flex items-center justify-center gap-1">
           {expanded ? 'Hide' : 'Show'} chores
           <span>{expanded ? '−' : '+'}</span>
         </button>
       </div>
 
       {expanded && (
-        <div className="border-t border-stone-100 p-4 bg-stone-50/50 space-y-2">
+        <div className="border-t border-ink-100 p-4 bg-paper/50 space-y-2">
           {chores.length === 0 ? (
-            <div className="text-sm text-stone-500 text-center py-4">No chores assigned</div>
+            <div className="text-sm text-ink-500 text-center py-4">No chores assigned</div>
           ) : (
             chores.map(chore => (
               <ChoreCard key={chore.id} chore={chore}
@@ -1358,36 +1420,34 @@ function GoalCard({ goal, balance, color, compact }) {
   const reached = balance >= goal.target;
   if (compact) {
     return (
-      <div className={`rounded-xl p-2 ${reached ? 'bg-emerald-50' : 'bg-stone-50'}`}>
+      <div className={`rounded-xl p-2 ${reached ? 'bg-emerald-50' : 'bg-paper'}`} style={{ '--u': color }}>
         <div className="flex items-center gap-2 mb-1">
           <div className="text-lg">{goal.icon}</div>
-          <div className="flex-1 text-xs font-bold text-stone-900 truncate">{goal.title}</div>
-          <div className="text-xs font-black text-stone-700">${balance.toFixed(0)}/${goal.target.toFixed(0)}</div>
+          <div className="flex-1 text-xs font-bold text-ink-900 truncate">{goal.title}</div>
+          <div className="mono font-extrabold text-xs text-ink-700">${balance.toFixed(0)}/${goal.target.toFixed(0)}</div>
         </div>
         <div className="h-1.5 bg-white rounded-full overflow-hidden">
-          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: reached ? '#10B981' : color }} />
+          <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: reached ? '#10B981' : 'var(--u)' }} />
         </div>
       </div>
     );
   }
   return (
-    <div className={`rounded-3xl p-5 shadow-sm ${reached ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200' : 'bg-white'}`}>
+    <div className={`rounded-3xl p-5 shadow-sm ${reached ? 'bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200' : 'bg-white'}`} style={{ '--u': color }}>
       <div className="flex items-center gap-3 mb-3">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0" style={{ background: (reached ? '#10B98120' : color + '20') }}>{goal.icon}</div>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0" style={{ background: reached ? '#10B98120' : 'var(--u-tint)' }}>{goal.icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="font-black text-stone-900">{goal.title}</div>
-          <div className="text-xs font-bold text-stone-500">${balance.toFixed(2)} of ${goal.target.toFixed(2)}</div>
+          <div className="font-black text-ink-900">{goal.title}</div>
+          <div className="mono text-[11px] text-ink-500 mt-0.5">${balance.toFixed(2)} of ${goal.target.toFixed(2)}</div>
         </div>
         {reached && (
-          <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500 text-white rounded-full text-xs font-black">
-            <Trophy size={12} /> Reached!
-          </div>
+          <Tag tone="ok"><Trophy size={12} /> Reached!</Tag>
         )}
       </div>
-      <div className="h-3 bg-stone-100 rounded-full overflow-hidden">
-        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: reached ? '#10B981' : color }} />
+      <div className="h-3 bg-ink-50 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: reached ? '#10B981' : 'var(--u)' }} />
       </div>
-      <div className="text-xs font-bold text-stone-500 mt-2 text-right">{pct.toFixed(0)}% there</div>
+      <div className="mono-up text-ink-500 mt-2 text-right">{pct.toFixed(0)}% there</div>
     </div>
   );
 }
@@ -1397,27 +1457,26 @@ function ChoreCard({ chore, completed, status, onToggle, color }) {
   const isApproved = status === 'approved';
   return (
     <button onClick={onToggle}
+      style={{ '--u': color }}
       className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all text-left ${
-        isApproved ? 'bg-emerald-50' : isPending ? 'bg-amber-50' : 'bg-white hover:bg-stone-50 shadow-sm'
+        isApproved ? 'bg-emerald-50' : isPending ? 'bg-[color:var(--u-tint)]' : 'bg-white hover:bg-paper shadow-sm border border-ink-100'
       }`}>
       <div className="text-3xl flex-shrink-0">{chore.icon}</div>
       <div className="flex-1 min-w-0">
-        <div className={`font-bold text-stone-900 flex items-center gap-2 flex-wrap ${isApproved ? 'line-through opacity-60' : ''}`}>
+        <div className={`font-bold text-ink-900 flex items-center gap-2 flex-wrap ${isApproved ? 'line-through opacity-60' : ''}`}>
           {chore.title}
           {chore.isRequiredForExtras && !isApproved && (
-            <span className="text-[9px] font-black text-amber-800 bg-amber-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 whitespace-nowrap">
-              <Lock size={8} /> REQUIRED
-            </span>
+            <Tag tone="brand"><Lock size={8} /> REQUIRED</Tag>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <div className="text-sm font-black" style={{ color: isApproved ? '#059669' : color }}>${chore.value.toFixed(2)}</div>
-          {isPending && <div className="text-xs font-bold text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full">Awaiting approval</div>}
-          {isApproved && <div className="text-xs font-bold text-emerald-700 bg-emerald-200 px-2 py-0.5 rounded-full">Approved ✓</div>}
+          <div className="mono font-extrabold text-sm" style={{ color: isApproved ? '#059669' : 'var(--u)' }}>${chore.value.toFixed(2)}</div>
+          {isPending && <Tag tone="warn">Awaiting approval</Tag>}
+          {isApproved && <Tag tone="ok">Approved ✓</Tag>}
         </div>
       </div>
-      <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${completed ? 'border-transparent' : 'border-stone-300'}`}
-           style={{ background: completed ? (isApproved ? '#10B981' : '#F59E0B') : 'transparent' }}>
+      <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition ${completed ? 'border-transparent' : 'border-ink-200'}`}
+           style={{ background: completed ? (isApproved ? '#10B981' : 'var(--u)') : 'transparent' }}>
         {completed && <Check size={22} className="text-white check-pop" strokeWidth={3} />}
       </div>
     </button>
@@ -1429,50 +1488,57 @@ function Approvals({ family, pending, pendingCustom = [], onApprove, onReject, o
   const total = pending.length + pendingCustom.length;
   return (
     <div className="space-y-6">
-      <div className="slide-up">
-        <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">Needs Approval</h2>
-        <p className="text-stone-500 font-semibold mt-1">
-          {total === 0 ? 'All caught up!' : `${total} ${total === 1 ? 'item' : 'items'} waiting for you`}
-        </p>
+      <div className="slide-up flex items-end justify-between gap-3">
+        <div>
+          <h2 className="display-font text-3xl md:text-4xl font-black text-white">Needs Approval</h2>
+          <p className="text-ink-300 font-semibold mt-1">
+            {total === 0 ? 'All caught up!' : `${total} ${total === 1 ? 'item' : 'items'} waiting for you`}
+          </p>
+        </div>
+        {total > 0 && (
+          <Tag tone="warn" className="!text-sm">
+            <span className="mono">{total}</span> pending
+          </Tag>
+        )}
       </div>
       {total === 0 ? (
-        <div className="bg-white rounded-3xl p-12 text-center slide-up">
+        <Glass strong className="rounded-3xl p-12 text-center slide-up">
           <div className="text-6xl mb-3">🎉</div>
-          <div className="font-black text-xl text-stone-900">Nothing to approve</div>
-          <div className="text-sm text-stone-500 mt-1">Come back later when the kids check off chores.</div>
-        </div>
+          <div className="font-black text-xl text-ink-900">Nothing to approve</div>
+          <div className="text-sm text-ink-500 mt-1">Come back later when the kids check off chores.</div>
+        </Glass>
       ) : (
-        <div className="space-y-3">
-          {pending.map((comp, i) => {
-            const chore = family.chores.find(c => c.id === comp.choreId);
-            const kid = family.kids.find(k => k.id === comp.kidId);
-            if (!chore || !kid) return null;
-            return (
-              <div key={comp.id} className="bg-white rounded-3xl p-5 shadow-sm slide-up" style={{ animationDelay: `${i * 0.05}s` }}>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
-                  <div className="flex-1">
-                    <div className="font-black text-stone-900">{kid.name}</div>
-                    <div className="text-sm text-stone-500">completed a chore</div>
+        <>
+          {pending.length > 0 && (
+            <div className="slide-up space-y-2">
+              <div className="mono-up text-ink-500 px-1">Chore completions</div>
+              {pending.map((comp, i) => {
+                const chore = family.chores.find(c => c.id === comp.choreId);
+                const kid = family.kids.find(k => k.id === comp.kidId);
+                if (!chore || !kid) return null;
+                return (
+                  <div key={comp.id} className="slide-up" style={{ animationDelay: `${i * 0.04}s` }}>
+                    <ApprovalRow
+                      item={{
+                        id: comp.id,
+                        kid: { name: kid.name, color: kid.color },
+                        choreTitle: chore.title,
+                        icon: chore.icon,
+                        value: chore.value,
+                        time: comp.date || '',
+                      }}
+                      onApprove={onApprove}
+                      onReject={onReject}
+                    />
                   </div>
-                  <div className="text-3xl">{chore.icon}</div>
-                </div>
-                <div className="bg-stone-50 rounded-2xl p-4 mb-4">
-                  <div className="font-bold text-stone-900">{chore.title}</div>
-                  <div className="text-sm font-black text-emerald-600 mt-0.5">${chore.value.toFixed(2)}</div>
-                </div>
-                <div className="flex gap-3">
-                  <button onClick={() => onReject(comp.id)} className="flex-1 py-3 rounded-2xl font-black bg-stone-100 hover:bg-red-100 text-stone-700 hover:text-red-700 transition flex items-center justify-center gap-2">
-                    <X size={20} strokeWidth={3} /> Reject
-                  </button>
-                  <button onClick={() => onApprove(comp.id)} className="flex-1 py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200">
-                    <Check size={20} strokeWidth={3} /> Approve
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {pendingCustom.map((cc, i) => {
+                );
+              })}
+            </div>
+          )}
+          {pendingCustom.length > 0 && (
+            <div className="slide-up space-y-3">
+              <div className="mono-up text-ink-500 px-1">"Other" entries</div>
+              {pendingCustom.map((cc, i) => {
             const kid = family.kids.find(k => k.id === cc.kidId);
             if (!kid) return null;
             return (
@@ -1486,7 +1552,9 @@ function Approvals({ family, pending, pendingCustom = [], onApprove, onReject, o
               />
             );
           })}
-        </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -1499,48 +1567,60 @@ function CustomApprovalCard({ custom, kid, animationDelay, onApprove, onReject }
   const QUICK_PICKS = [1, 2, 5];
 
   return (
-    <div className="bg-white rounded-3xl p-5 shadow-sm slide-up border-2 border-amber-200/50" style={{ animationDelay: `${animationDelay}s` }}>
+    <div className="glass-strong rounded-3xl p-5 slide-up border border-ink-200" style={{ animationDelay: `${animationDelay}s`, '--u': kid.color, borderLeft: `4px solid ${kid.color}` }}>
       <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+        <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
         <div className="flex-1">
-          <div className="font-black text-stone-900">{kid.name}</div>
-          <div className="text-xs font-bold text-amber-700 uppercase tracking-wider">"Other" entry</div>
+          <div className="font-black text-ink-900">{kid.name}</div>
+          <div className="mono-up text-ink-500 mt-0.5">"Other" entry</div>
         </div>
         <div className="text-3xl">{custom.icon || '✨'}</div>
       </div>
-      <div className="bg-amber-50 border-2 border-amber-200/60 rounded-2xl p-4 mb-4">
-        <div className="font-bold text-stone-900">{custom.title}</div>
-        <div className="text-xs font-semibold text-stone-500 mt-1">Submitted {custom.date}</div>
+      <div className="bg-[color:var(--u-tint)] rounded-2xl p-4 mb-4">
+        <div className="font-bold text-ink-900">{custom.title}</div>
+        <div className="mono text-[11px] text-ink-500 mt-1">Submitted {custom.date}</div>
       </div>
 
-      <div className="mb-3">
-        <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">How much is it worth?</label>
+      <div className="mb-4">
+        <label className="mono-up text-ink-500 mb-2 block">How much is it worth?</label>
         <div className="flex gap-2 mb-2">
-          {QUICK_PICKS.map(amt => (
-            <button key={amt} onClick={() => setValue(String(amt.toFixed(2)))}
-              className={`flex-1 py-2 rounded-xl font-black text-sm transition ${value === amt.toFixed(2) ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 hover:bg-stone-200 text-stone-700'}`}>
-              ${amt}
-            </button>
-          ))}
+          {QUICK_PICKS.map(amt => {
+            const selected = value === amt.toFixed(2);
+            return (
+              <PillButton
+                key={amt}
+                kind={selected ? 'primary' : 'glass'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setValue(String(amt.toFixed(2)))}
+              >
+                <span className="mono">${amt}</span>
+              </PillButton>
+            );
+          })}
         </div>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-black">$</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 mono text-ink-500 font-extrabold">$</span>
           <input
             type="number" min="0" step="0.25" value={value} onChange={(e) => setValue(e.target.value)}
             placeholder="Custom amount"
-            className="w-full pl-7 pr-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-amber-300 text-stone-900 font-semibold"
+            className="w-full pl-7 pr-4 py-3 rounded-2xl bg-ink-50 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 mono font-semibold"
           />
         </div>
       </div>
 
       <div className="flex gap-3">
-        <button onClick={onReject} className="flex-1 py-3 rounded-2xl font-black bg-stone-100 hover:bg-red-100 text-stone-700 hover:text-red-700 transition flex items-center justify-center gap-2">
-          <X size={20} strokeWidth={3} /> Reject
-        </button>
-        <button onClick={() => canApprove && onApprove(numeric)} disabled={!canApprove}
-          className="flex-1 py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-200 disabled:shadow-none">
-          <Check size={20} strokeWidth={3} /> Approve
-        </button>
+        <PillButton kind="ghost" className="flex-1" onClick={onReject}>
+          <X size={18} strokeWidth={3} /> Reject
+        </PillButton>
+        <PillButton
+          kind="primary"
+          className="flex-1"
+          onClick={() => canApprove && onApprove(numeric)}
+          disabled={!canApprove}
+        >
+          <Check size={18} strokeWidth={3} /> Approve
+        </PillButton>
       </div>
     </div>
   );
@@ -1562,10 +1642,10 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
   if (!selectedKid) {
     return (
       <div className="space-y-6">
-        <h2 className="display-font text-3xl font-black text-stone-900">History</h2>
-        <div className="bg-white rounded-3xl p-12 text-center">
+        <h2 className="display-font text-3xl font-black text-white">History</h2>
+        <div className="glass-strong rounded-3xl p-12 text-center">
           <div className="text-5xl mb-3">🤷</div>
-          <div className="font-bold text-stone-900">No one to show</div>
+          <div className="font-bold text-ink-900">No one to show</div>
         </div>
       </div>
     );
@@ -1591,24 +1671,27 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
   return (
     <div className="space-y-6">
       <div className="slide-up">
-        <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">History</h2>
-        <p className="text-stone-500 font-semibold mt-1">Past chores and allowance</p>
+        <h2 className="display-font text-3xl md:text-4xl font-black text-white">History</h2>
+        <p className="text-ink-300 font-semibold mt-1">Past chores and allowance</p>
       </div>
 
       {isParent && kidsToShow.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-2 slide-up">
-          {kidsToShow.map(kid => (
-            <button key={kid.id} onClick={() => setSelectedKidId(kid.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-bold transition flex-shrink-0 ${selectedKidId === kid.id ? 'text-white shadow-lg' : 'bg-white text-stone-700 hover:bg-stone-100'}`}
-              style={{ background: selectedKidId === kid.id ? kid.color : undefined }}>
-              <span className="text-xl">{kid.avatar}</span>{kid.name}
-            </button>
-          ))}
+        <div className="flex gap-2 overflow-x-auto pb-2 slide-up no-scrollbar">
+          {kidsToShow.map(kid => {
+            const selected = selectedKidId === kid.id;
+            return (
+              <button key={kid.id} onClick={() => setSelectedKidId(kid.id)}
+                style={{ '--u': kid.color, ...(selected && { background: 'var(--u)' }) }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl font-bold transition flex-shrink-0 ${selected ? 'text-white shadow-glow' : 'glass text-ink-200 hover:bg-white/15'}`}>
+                <span className="text-xl">{kid.avatar}</span>{kid.name}
+              </button>
+            );
+          })}
         </div>
       )}
 
-      <div className="bg-white rounded-3xl p-6 shadow-sm slide-up">
-        <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-4">Last 4 weeks</div>
+      <div className="glass-strong rounded-3xl p-6 slide-up" style={{ '--u': selectedKid.color }}>
+        <div className="mono-up text-ink-500 mb-4">Last 4 weeks</div>
         <div className="flex items-end justify-between gap-3 h-40">
           {weeks.map((w, i) => {
             const offset = 3 - i;
@@ -1616,49 +1699,47 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
             const heightPct = maxEarn > 0 ? (w.total / maxEarn) * 100 : 0;
             return (
               <button key={offset} onClick={() => setWeekOffset(offset)} className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="text-xs font-black text-stone-700">${w.total.toFixed(0)}</div>
-                <div className="w-full bg-stone-100 rounded-t-xl flex-1 flex items-end overflow-hidden">
+                <div className="mono font-extrabold text-xs text-ink-700">${w.total.toFixed(0)}</div>
+                <div className="w-full bg-ink-50 rounded-t-xl flex-1 flex items-end overflow-hidden">
                   <div className="w-full rounded-t-xl transition-all duration-500"
-                    style={{ height: `${heightPct}%`, background: isSelected ? selectedKid.color : selectedKid.color + '60', minHeight: w.total > 0 ? '8px' : '0' }} />
+                    style={{ height: `${heightPct}%`, background: isSelected ? 'var(--u)' : 'color-mix(in oklab, var(--u) 38%, white)', minHeight: w.total > 0 ? '8px' : '0' }} />
                 </div>
-                <div className={`text-xs font-bold ${isSelected ? 'text-stone-900' : 'text-stone-400'}`}>{offset === 0 ? 'This' : offset === 1 ? 'Last' : `-${offset}w`}</div>
+                <div className={`text-xs font-bold ${isSelected ? 'text-ink-900' : 'text-ink-500'}`}>{offset === 0 ? 'This' : offset === 1 ? 'Last' : `-${offset}w`}</div>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl p-6 shadow-sm slide-up">
+      <div className="glass-strong rounded-3xl p-6 slide-up" style={{ '--u': selectedKid.color }}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
           <div>
-            <div className="text-xs font-black uppercase tracking-widest text-stone-500">{weekData.weekLabel}</div>
-            <div className="display-font text-3xl font-black text-stone-900 mt-1">${weekData.total.toFixed(2)}</div>
+            <div className="mono-up text-ink-500">{weekData.weekLabel}</div>
+            <div className="mono font-extrabold text-3xl text-ink-900 mt-1">${weekData.total.toFixed(2)}</div>
           </div>
           {weekData.allDone && (
-            <div className="flex items-center gap-1 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-black">
-              <Trophy size={16} /> Perfect week!
-            </div>
+            <Tag tone="ok" className="!text-sm"><Trophy size={16} /> Perfect week!</Tag>
           )}
         </div>
 
         <div className="grid grid-cols-3 gap-2 mb-5">
-          <div className="bg-stone-50 rounded-2xl p-3">
-            <div className="text-[10px] font-bold text-stone-500 uppercase">Chores</div>
-            <div className="display-font text-xl font-black text-stone-900 mt-1">${weekData.choreEarnings.toFixed(2)}</div>
+          <div className="bg-paper rounded-2xl p-3">
+            <div className="mono-up text-ink-500">Chores</div>
+            <div className="mono font-extrabold text-xl text-ink-900 mt-1">${weekData.choreEarnings.toFixed(2)}</div>
           </div>
-          <div className="bg-amber-50 rounded-2xl p-3">
-            <div className="text-[10px] font-bold text-amber-700 uppercase">Extras</div>
-            <div className="display-font text-xl font-black text-stone-900 mt-1">${(weekData.extraEarnings || 0).toFixed(2)}</div>
+          <div className="bg-[color:var(--u-tint)] rounded-2xl p-3">
+            <div className="mono-up text-[color:var(--u)]">Extras</div>
+            <div className="mono font-extrabold text-xl text-ink-900 mt-1">${(weekData.extraEarnings || 0).toFixed(2)}</div>
           </div>
-          <div className="bg-stone-50 rounded-2xl p-3">
-            <div className="text-[10px] font-bold text-stone-500 uppercase">Bonus</div>
-            <div className="display-font text-xl font-black mt-1" style={{ color: weekData.bonus > 0 ? '#059669' : '#A8A29E' }}>${weekData.bonus.toFixed(2)}</div>
+          <div className="bg-paper rounded-2xl p-3">
+            <div className="mono-up text-ink-500">Bonus</div>
+            <div className={`mono font-extrabold text-xl mt-1 ${weekData.bonus > 0 ? 'text-emerald-600' : 'text-ink-500'}`}>${weekData.bonus.toFixed(2)}</div>
           </div>
         </div>
 
-        <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3">Chores Completed</div>
+        <div className="mono-up text-ink-500 mb-3">Chores Completed</div>
         {weekData.completions.length === 0 ? (
-          <div className="text-center py-6 text-stone-400 font-semibold">No chores completed this week</div>
+          <div className="text-center py-6 text-ink-500 font-semibold">No chores completed this week</div>
         ) : (
           <div className="space-y-2">
             {weekData.completions.map(comp => {
@@ -1667,18 +1748,18 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
               const isExtra = chore.assignedTo === null || chore.assignedTo === undefined;
               const compDate = new Date(comp.date);
               return (
-                <div key={comp.id} className={`flex items-center gap-3 p-3 rounded-2xl ${isExtra ? 'bg-amber-50' : 'bg-stone-50'}`}>
+                <div key={comp.id} className={`flex items-center gap-3 p-3 rounded-2xl ${isExtra ? 'bg-[color:var(--u-tint)]' : 'bg-paper'}`}>
                   <div className="text-2xl">{chore.icon}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-stone-900 flex items-center gap-2 flex-wrap">
+                    <div className="font-bold text-ink-900 flex items-center gap-2 flex-wrap">
                       {chore.title}
-                      {isExtra && <span className="text-[10px] font-black text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full flex items-center gap-0.5"><Sparkles size={9} /> EXTRA</span>}
+                      {isExtra && <Tag tone="brand"><Sparkles size={9} /> EXTRA</Tag>}
                     </div>
-                    <div className="text-xs text-stone-500 font-semibold">
+                    <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">
                       {compDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     </div>
                   </div>
-                  <div className="font-black text-emerald-600">+${chore.value.toFixed(2)}</div>
+                  <div className="mono font-extrabold text-emerald-600">+${chore.value.toFixed(2)}</div>
                 </div>
               );
             })}
@@ -1687,7 +1768,7 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
 
         {weekCustoms.length > 0 && (
           <>
-            <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-3 mt-5">"Other" Entries</div>
+            <div className="mono-up text-ink-500 mb-3 mt-5">"Other" Entries</div>
             <div className="space-y-2">
               {weekCustoms.map(cc => {
                 const compDate = new Date(cc.date);
@@ -1695,23 +1776,23 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
                 const isRejected = cc.status === 'rejected';
                 const isPending = cc.status === 'pending';
                 return (
-                  <div key={cc.id} className={`flex items-center gap-3 p-3 rounded-2xl ${isApproved ? 'bg-amber-50' : isRejected ? 'bg-red-50' : 'bg-stone-50'}`}>
+                  <div key={cc.id} className={`flex items-center gap-3 p-3 rounded-2xl ${isApproved ? 'bg-[color:var(--u-tint)]' : isRejected ? 'bg-red-50' : 'bg-paper'}`}>
                     <div className={`text-2xl ${isRejected ? 'opacity-40' : ''}`}>{cc.icon || '✨'}</div>
                     <div className="flex-1 min-w-0">
-                      <div className={`font-bold flex items-center gap-2 flex-wrap ${isRejected ? 'text-stone-400 line-through' : 'text-stone-900'}`}>
+                      <div className={`font-bold flex items-center gap-2 flex-wrap ${isRejected ? 'text-ink-500 line-through' : 'text-ink-900'}`}>
                         {cc.title}
-                        {isApproved && <span className="text-[10px] font-black text-amber-700 bg-amber-200 px-2 py-0.5 rounded-full no-underline" style={{ textDecoration: 'none' }}>OTHER</span>}
-                        {isPending && <span className="text-[10px] font-black text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full" style={{ textDecoration: 'none' }}>PENDING</span>}
-                        {isRejected && <span className="text-[10px] font-black text-red-500 bg-red-100 px-2 py-0.5 rounded-full" style={{ textDecoration: 'none' }}>REJECTED</span>}
+                        {isApproved && <Tag tone="brand">OTHER</Tag>}
+                        {isPending && <Tag tone="warn">PENDING</Tag>}
+                        {isRejected && <Tag tone="bad">REJECTED</Tag>}
                       </div>
-                      <div className="text-xs text-stone-500 font-semibold">
+                      <div className="mono text-[11px] text-ink-500 font-semibold">
                         {compDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      {isApproved && <div className="font-black text-emerald-600">+${(cc.value || 0).toFixed(2)}</div>}
-                      {isPending && <div className="text-xs font-bold text-stone-400">$—</div>}
-                      {isRejected && <div className="text-xs font-bold text-red-400">$0</div>}
+                      {isApproved && <div className="mono font-extrabold text-emerald-600">+${(cc.value || 0).toFixed(2)}</div>}
+                      {isPending && <div className="mono text-xs font-bold text-ink-500">$—</div>}
+                      {isRejected && <div className="mono text-xs font-bold text-red-400">$0</div>}
                       {isApproved && isParent && (
                         <PromoteButton cc={cc} kid={selectedKid} family={family} reload={reload} />
                       )}
@@ -1753,41 +1834,37 @@ function Manage({ family, reload, currentUser }) {
   return (
     <div className="space-y-6">
       <div className="slide-up">
-        <h2 className="display-font text-3xl md:text-4xl font-black text-stone-900">Manage</h2>
-        <p className="text-stone-500 font-semibold mt-1">Family, chores, and settings</p>
+        <h2 className="display-font text-3xl md:text-4xl font-black text-white">Manage</h2>
+        <p className="text-ink-300 font-semibold mt-1">Family, chores, and settings</p>
       </div>
 
       {/* Parents */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
+      <div className="glass-strong rounded-3xl p-5 slide-up">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500">Parents</div>
-          <button onClick={() => setShowAddParent(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-sm transition">
-            <Plus size={16} strokeWidth={3} /> Add
-          </button>
+          <div className="mono-up text-ink-500">Parents</div>
+          <PillButton kind="soft" size="sm" onClick={() => setShowAddParent(true)}><Plus size={16} strokeWidth={3} /> Add</PillButton>
         </div>
         <div className="space-y-2">
           {family.parents.map(p => (
-            <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl bg-stone-50">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl" style={{ background: (p.color || '#F59E0B') + '20' }}>{p.avatar}</div>
+            <div key={p.id} className="flex items-center gap-3 p-3 rounded-2xl bg-paper" style={{ '--u': p.color || '#FFC233' }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'var(--u-tint)' }}>{p.avatar}</div>
               <div className="flex-1">
-                <div className="font-black text-stone-900">{p.name}</div>
-                <div className="text-xs text-stone-500 font-semibold">
+                <div className="font-black text-ink-900">{p.name}</div>
+                <div className="mono-up text-ink-500 mt-0.5">
                   {p.id === currentUser.id ? 'Signed in' : 'Parent'}
                 </div>
               </div>
               <button onClick={() => setEditingParent(p)}
-                      className="w-10 h-10 rounded-xl hover:bg-amber-100 text-stone-500 hover:text-amber-700 flex items-center justify-center transition"
+                      className="w-10 h-10 rounded-xl hover:bg-[color:var(--u-tint)] text-ink-500 hover:text-[color:var(--u)] flex items-center justify-center transition"
                       aria-label={`Edit ${p.name}`}>
                 <Pencil size={17} />
               </button>
               {p.id === currentUser.id && (
-                <button onClick={() => setShowChangePin(true)} className="px-3 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-black transition">
-                  Change PIN
-                </button>
+                <PillButton kind="ghost" size="sm" onClick={() => setShowChangePin(true)}>Change PIN</PillButton>
               )}
               {family.parents.length > 1 && p.id !== currentUser.id && (
                 <button onClick={() => setConfirmDelete({ type: 'parent', id: p.id, name: p.name })}
-                        className="w-10 h-10 rounded-xl hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center transition">
+                        className="w-10 h-10 rounded-xl hover:bg-red-50 text-ink-500 hover:text-red-600 flex items-center justify-center transition">
                   <Trash2 size={18} />
                 </button>
               )}
@@ -1797,29 +1874,27 @@ function Manage({ family, reload, currentUser }) {
       </div>
 
       {/* Kids */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
+      <div className="glass-strong rounded-3xl p-5 slide-up">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500">Kids</div>
-          <button onClick={() => setShowAddKid(true)} className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-sm transition">
-            <Plus size={16} strokeWidth={3} /> Add
-          </button>
+          <div className="mono-up text-ink-500">Kids</div>
+          <PillButton kind="soft" size="sm" onClick={() => setShowAddKid(true)}><Plus size={16} strokeWidth={3} /> Add</PillButton>
         </div>
         <div className="space-y-2">
-          {family.kids.length === 0 && <div className="text-center py-6 text-stone-400 font-semibold">No kids yet</div>}
+          {family.kids.length === 0 && <div className="text-center py-6 text-ink-500 font-semibold">No kids yet</div>}
           {family.kids.map(kid => (
-            <div key={kid.id} className="flex items-center gap-3 p-3 rounded-2xl bg-stone-50">
-              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+            <div key={kid.id} className="flex items-center gap-3 p-3 rounded-2xl bg-paper" style={{ '--u': kid.color }}>
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
               <div className="flex-1">
-                <div className="font-black text-stone-900">{kid.name}</div>
-                <div className="text-xs text-stone-500 font-semibold">Age {kid.age} · ${kid.weeklyAllowance}/week bonus</div>
+                <div className="font-black text-ink-900">{kid.name}</div>
+                <div className="text-xs text-ink-500 font-semibold mt-0.5">Age <span className="mono font-bold">{kid.age}</span> · <span className="mono font-bold">${kid.weeklyAllowance}</span>/week bonus</div>
               </div>
               <button onClick={() => setEditingKid(kid)}
-                      className="w-10 h-10 rounded-xl hover:bg-amber-100 text-stone-500 hover:text-amber-700 flex items-center justify-center transition"
+                      className="w-10 h-10 rounded-xl hover:bg-[color:var(--u-tint)] text-ink-500 hover:text-[color:var(--u)] flex items-center justify-center transition"
                       aria-label={`Edit ${kid.name}`}>
                 <Pencil size={17} />
               </button>
               <button onClick={() => setConfirmDelete({ type: 'kid', id: kid.id, name: kid.name })}
-                      className="w-10 h-10 rounded-xl hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center transition"
+                      className="w-10 h-10 rounded-xl hover:bg-red-50 text-ink-500 hover:text-red-600 flex items-center justify-center transition"
                       aria-label={`Remove ${kid.name}`}>
                 <Trash2 size={18} />
               </button>
@@ -1829,45 +1904,40 @@ function Manage({ family, reload, currentUser }) {
       </div>
 
       {/* Chores */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
+      <div className="glass-strong rounded-3xl p-5 slide-up">
         <div className="flex items-center justify-between mb-4">
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500">Chores</div>
-          <button onClick={() => setShowAddChore(true)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-sm transition">
-            <Plus size={16} strokeWidth={3} /> Add
-          </button>
+          <div className="mono-up text-ink-500">Chores</div>
+          <PillButton kind="soft" size="sm" onClick={() => setShowAddChore(true)}><Plus size={16} strokeWidth={3} /> Add</PillButton>
         </div>
         <div className="space-y-3">
-          {family.chores.length === 0 && <div className="text-center py-6 text-stone-400 font-semibold">No chores yet</div>}
+          {family.chores.length === 0 && <div className="text-center py-6 text-ink-500 font-semibold">No chores yet</div>}
           {family.kids.map(kid => {
             const kidChores = family.chores.filter(c => c.assignedTo === kid.id);
             if (kidChores.length === 0) return null;
             return (
               <div key={kid.id}>
-                <div className="text-xs font-bold text-stone-500 px-2 mb-1 flex items-center gap-1">
+                <div className="text-xs font-bold text-ink-500 px-2 mb-1 flex items-center gap-1">
                   <span>{kid.avatar}</span> {kid.name}'s chores
                 </div>
                 <div className="space-y-1.5">
                   {kidChores.map(chore => (
-                    <div key={chore.id} className="flex items-center gap-3 p-3 rounded-2xl bg-stone-50">
+                    <div key={chore.id} className="flex items-center gap-3 p-3 rounded-2xl bg-paper" style={{ '--u': kid.color }}>
                       <div className="text-2xl">{chore.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-stone-900 flex items-center gap-2 flex-wrap">
+                        <div className="font-bold text-ink-900 flex items-center gap-2 flex-wrap">
                           {chore.title}
                           {chore.isRequiredForExtras && (
-                            <span className="text-[9px] font-black text-amber-800 bg-amber-200 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 whitespace-nowrap">
-                              <Lock size={8} /> REQUIRED
-                            </span>
+                            <Tag tone="brand"><Lock size={8} /> REQUIRED</Tag>
                           )}
                         </div>
-                        <div className="text-xs text-stone-500 font-semibold">${chore.value.toFixed(2)} · {chore.frequency}</div>
+                        <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">${chore.value.toFixed(2)} · {chore.frequency}</div>
                       </div>
                       <button onClick={() => setEditingChore(chore)}
-                              className="w-10 h-10 rounded-xl hover:bg-amber-100 text-stone-500 hover:text-amber-700 flex items-center justify-center transition">
+                              className="w-10 h-10 rounded-xl hover:bg-[color:var(--u-tint)] text-ink-500 hover:text-[color:var(--u)] flex items-center justify-center transition">
                         <Pencil size={17} />
                       </button>
                       <button onClick={() => setConfirmDelete({ type: 'chore', id: chore.id, name: chore.title })}
-                              className="w-10 h-10 rounded-xl hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center transition">
+                              className="w-10 h-10 rounded-xl hover:bg-red-50 text-ink-500 hover:text-red-600 flex items-center justify-center transition">
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -1880,23 +1950,23 @@ function Manage({ family, reload, currentUser }) {
           {/* Extra (shared) Chores */}
           {family.chores.filter(c => c.assignedTo === null || c.assignedTo === undefined).length > 0 && (
             <div>
-              <div className="text-xs font-bold text-amber-700 px-2 mb-1 flex items-center gap-1">
+              <div className="mono-up text-[color:var(--u)] px-2 mb-1 flex items-center gap-1">
                 <Sparkles size={14} /> Extra Chores (shared)
               </div>
               <div className="space-y-1.5">
                 {family.chores.filter(c => c.assignedTo === null || c.assignedTo === undefined).map(chore => (
-                  <div key={chore.id} className="flex items-center gap-3 p-3 rounded-2xl bg-amber-50 border border-amber-200">
+                  <div key={chore.id} className="flex items-center gap-3 p-3 rounded-2xl bg-[color:var(--u-tint)]">
                     <div className="text-2xl">{chore.icon}</div>
                     <div className="flex-1">
-                      <div className="font-bold text-stone-900">{chore.title}</div>
-                      <div className="text-xs text-stone-500 font-semibold">${chore.value.toFixed(2)} · {chore.frequency} · {(chore.maxClaimers || 1) === 1 ? 'one kid claims' : `up to ${chore.maxClaimers} kids`}</div>
+                      <div className="font-bold text-ink-900">{chore.title}</div>
+                      <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">${chore.value.toFixed(2)} · {chore.frequency} · {(chore.maxClaimers || 1) === 1 ? 'one kid claims' : `up to ${chore.maxClaimers} kids`}</div>
                     </div>
                     <button onClick={() => setEditingChore(chore)}
-                            className="w-10 h-10 rounded-xl hover:bg-amber-200 text-stone-500 hover:text-amber-800 flex items-center justify-center transition">
+                            className="w-10 h-10 rounded-xl hover:bg-[color:var(--u-tint)] text-ink-500 hover:text-ink-900 flex items-center justify-center transition">
                       <Pencil size={17} />
                     </button>
                     <button onClick={() => setConfirmDelete({ type: 'chore', id: chore.id, name: chore.title })}
-                            className="w-10 h-10 rounded-xl hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center transition">
+                            className="w-10 h-10 rounded-xl hover:bg-red-50 text-ink-500 hover:text-red-600 flex items-center justify-center transition">
                       <Trash2 size={18} />
                     </button>
                   </div>
@@ -1908,12 +1978,12 @@ function Manage({ family, reload, currentUser }) {
       </div>
 
       {/* Savings Goals */}
-      <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
-        <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-4 flex items-center gap-1">
+      <div className="glass-strong rounded-3xl p-5 slide-up">
+        <div className="mono-up text-ink-500 mb-4 flex items-center gap-1">
           <Target size={12} /> Savings Goals
         </div>
         {family.kids.length === 0 ? (
-          <div className="text-center py-6 text-stone-400 font-semibold">Add a kid first</div>
+          <div className="text-center py-6 text-ink-500 font-semibold">Add a kid first</div>
         ) : (
           <div className="space-y-4">
             {family.kids.map(kid => {
@@ -1921,27 +1991,26 @@ function Manage({ family, reload, currentUser }) {
               return (
                 <div key={kid.id}>
                   <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-bold text-stone-500 flex items-center gap-1 px-1">
+                    <div className="text-xs font-bold text-ink-500 flex items-center gap-1 px-1">
                       <span>{kid.avatar}</span> {kid.name}'s goals
                     </div>
-                    <button onClick={() => setAddingGoalFor(kid)}
-                            className="flex items-center gap-1 px-3 py-1 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-black text-xs transition">
+                    <PillButton kind="soft" size="sm" onClick={() => setAddingGoalFor(kid)} style={{ '--u': kid.color }}>
                       <Plus size={12} strokeWidth={3} /> Add
-                    </button>
+                    </PillButton>
                   </div>
                   {kidGoals.length === 0 ? (
-                    <div className="text-xs text-stone-400 font-semibold px-2 py-2">No goals yet</div>
+                    <div className="text-xs text-ink-500 font-semibold px-2 py-2">No goals yet</div>
                   ) : (
                     <div className="space-y-1.5">
                       {kidGoals.map(goal => (
-                        <div key={goal.id} className="flex items-center gap-3 p-3 rounded-2xl bg-stone-50">
+                        <div key={goal.id} className="flex items-center gap-3 p-3 rounded-2xl bg-paper" style={{ '--u': kid.color }}>
                           <div className="text-2xl">{goal.icon}</div>
                           <div className="flex-1">
-                            <div className="font-bold text-stone-900">{goal.title}</div>
-                            <div className="text-xs text-stone-500 font-semibold">Target: ${goal.target.toFixed(2)}</div>
+                            <div className="font-bold text-ink-900">{goal.title}</div>
+                            <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">Target: ${goal.target.toFixed(2)}</div>
                           </div>
                           <button onClick={() => setConfirmDelete({ type: 'goal', id: goal.id, name: goal.title })}
-                                  className="w-10 h-10 rounded-xl hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center transition">
+                                  className="w-10 h-10 rounded-xl hover:bg-red-50 text-ink-500 hover:text-red-600 flex items-center justify-center transition">
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -1957,8 +2026,8 @@ function Manage({ family, reload, currentUser }) {
 
       {/* Payout History */}
       {(family.payouts || []).length > 0 && (
-        <div className="bg-white rounded-3xl p-5 shadow-sm slide-up">
-          <div className="text-xs font-black uppercase tracking-widest text-stone-500 mb-4 flex items-center gap-1">
+        <div className="glass-strong rounded-3xl p-5 slide-up">
+          <div className="mono-up text-ink-500 mb-4 flex items-center gap-1">
             <DollarSign size={12} /> Recent Payouts
           </div>
           <div className="space-y-2">
@@ -1967,18 +2036,18 @@ function Manage({ family, reload, currentUser }) {
               if (!kid) return null;
               const d = new Date(payout.date);
               return (
-                <div key={payout.id} className="flex items-center gap-3 p-3 rounded-2xl bg-stone-50">
-                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+                <div key={payout.id} className="flex items-center gap-3 p-3 rounded-2xl bg-paper" style={{ '--u': kid.color }}>
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-stone-900">{kid.name}</div>
-                    <div className="text-xs text-stone-500 font-semibold">
+                    <div className="font-bold text-ink-900">{kid.name}</div>
+                    <div className="mono text-[11px] text-ink-500 font-semibold mt-0.5">
                       {d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       {payout.note && <span> · {payout.note}</span>}
                     </div>
                   </div>
-                  <div className="font-black text-emerald-600">${payout.amount.toFixed(2)}</div>
+                  <div className="mono font-extrabold text-emerald-600">${payout.amount.toFixed(2)}</div>
                   <button onClick={() => setConfirmDelete({ type: 'payout', id: payout.id, name: `$${payout.amount.toFixed(2)} payout to ${kid.name}` })}
-                          className="w-8 h-8 rounded-lg hover:bg-red-50 text-stone-300 hover:text-red-600 flex items-center justify-center transition">
+                          className="w-8 h-8 rounded-lg hover:bg-red-50 text-ink-300 hover:text-red-600 flex items-center justify-center transition">
                     <X size={14} />
                   </button>
                 </div>
@@ -2021,12 +2090,12 @@ function Manage({ family, reload, currentUser }) {
 // ============ MODALS ============
 function ModalShell({ children, onClose, title }) {
   return (
-    <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-ink-900/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50" onClick={onClose}>
       <div className="bg-white rounded-t-3xl md:rounded-3xl p-6 w-full md:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto pop-in"
            onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h3 className="display-font text-2xl font-black text-stone-900">{title}</h3>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-stone-100 flex items-center justify-center transition"><X size={20} /></button>
+          <h3 className="display-font text-2xl font-black text-ink-900">{title}</h3>
+          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-ink-50 flex items-center justify-center transition"><X size={20} /></button>
         </div>
         {children}
       </div>
@@ -2060,17 +2129,17 @@ function AddChoreModal({ kids, onAdd, onClose }) {
     <ModalShell onClose={onClose} title="New chore">
       <div className="space-y-4">
         {/* Mode toggle */}
-        <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-2xl">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-ink-50 rounded-2xl">
           <button type="button" onClick={() => setMode('assigned')}
-                  className={`py-2.5 rounded-xl text-sm font-black transition ${mode === 'assigned' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}>
+                  className={`py-2.5 rounded-xl text-sm font-bold transition ${mode === 'assigned' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500'}`}>
             Assigned
           </button>
           <button type="button" onClick={() => setMode('extra')}
-                  className={`py-2.5 rounded-xl text-sm font-black transition flex items-center justify-center gap-1 ${mode === 'extra' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500'}`}>
+                  className={`py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${mode === 'extra' ? 'bg-white text-[color:var(--u)] shadow-sm' : 'text-ink-500'}`}>
             <Sparkles size={14} /> Extra Chore
           </button>
         </div>
-        <div className="text-xs font-semibold text-stone-500 -mt-2 px-1">
+        <div className="text-xs font-semibold text-ink-500 -mt-2 px-1">
           {mode === 'assigned'
             ? 'Goes to specific kids. Each gets their own copy.'
             : 'Shared across all kids — whoever does it first earns the money.'}
@@ -2078,24 +2147,24 @@ function AddChoreModal({ kids, onAdd, onClose }) {
 
         <Field label="Name">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Feed the cat" autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Icon">
-          <div className="grid grid-cols-7 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-7 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_EMOJI_OPTIONS.map(e => (
               <button key={e} type="button" onClick={() => setIcon(e)}
-                      className={`text-2xl p-2 rounded-xl transition ${icon === e ? 'bg-amber-200 scale-110' : 'hover:bg-stone-200'}`}>{e}</button>
+                      className={`text-2xl p-2 rounded-xl transition ${icon === e ? 'bg-[color:var(--u-tint)] scale-110' : 'hover:bg-ink-100'}`}>{e}</button>
             ))}
           </div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Value ($)">
             <input type="number" step="0.25" min="0" value={value} onChange={(e) => setValue(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           <Field label={mode === 'extra' ? 'Resets' : 'How often'}>
             <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
-                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300">
+                    className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]">
               {CADENCE_OPTIONS.map(c => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
@@ -2106,18 +2175,18 @@ function AddChoreModal({ kids, onAdd, onClose }) {
         {mode === 'assigned' ? (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-black uppercase tracking-widest text-stone-500">
-                Assign to {assignedToIds.length > 0 && <span className="text-amber-600">({assignedToIds.length})</span>}
+              <label className="mono-up text-ink-500">
+                Assign to {assignedToIds.length > 0 && <span className="text-[color:var(--u)]">({assignedToIds.length})</span>}
               </label>
               {kids.length > 1 && (
                 <button type="button" onClick={allSelected ? clearAll : selectAll}
-                        className="text-xs font-black text-amber-600 hover:text-amber-700 transition">
+                        className="text-xs font-black text-[color:var(--u)] hover:text-[color:var(--u)] transition">
                   {allSelected ? 'Clear all' : 'Select all'}
                 </button>
               )}
             </div>
             {kids.length === 0 ? (
-              <div className="text-sm text-stone-500 p-4 bg-stone-50 rounded-2xl text-center">
+              <div className="text-sm text-ink-500 p-4 bg-paper rounded-2xl text-center">
                 Add a kid first, or switch to Extra Chore above.
               </div>
             ) : (
@@ -2126,11 +2195,11 @@ function AddChoreModal({ kids, onAdd, onClose }) {
                   const selected = assignedToIds.includes(kid.id);
                   return (
                     <button key={kid.id} type="button" onClick={() => toggleKid(kid.id)}
-                            className={`relative flex flex-col items-center gap-1 p-3 rounded-2xl font-bold transition border-2 ${selected ? 'bg-white shadow-md' : 'bg-stone-100 hover:bg-stone-200 border-transparent opacity-60'}`}
-                            style={{ borderColor: selected ? kid.color : 'transparent' }}>
+                            style={{ '--u': kid.color, borderColor: selected ? 'var(--u)' : 'transparent' }}
+                            className={`relative flex flex-col items-center gap-1 p-3 rounded-2xl font-bold transition border-2 ${selected ? 'bg-white shadow-md' : 'bg-ink-50 hover:bg-ink-100 opacity-60'}`}>
                       {selected && (
                         <div className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-md"
-                             style={{ background: kid.color }}>
+                             style={{ background: 'var(--u)' }}>
                           <Check size={14} className="text-white" strokeWidth={3} />
                         </div>
                       )}
@@ -2142,16 +2211,16 @@ function AddChoreModal({ kids, onAdd, onClose }) {
               </div>
             )}
             {kids.length > 1 && assignedToIds.length > 0 && (
-              <div className="text-xs text-stone-500 font-semibold mt-2 px-1">
+              <div className="text-xs text-ink-500 font-semibold mt-2 px-1">
                 {assignedToIds.length === 1 ? 'A chore will be added for this kid' :
                  `A separate copy will be added for each of the ${assignedToIds.length} selected kids`}
               </div>
             )}
           </div>
         ) : (
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 flex gap-3">
-            <Sparkles size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm font-semibold text-stone-700">
+          <div className="bg-[color:var(--u-tint)] rounded-2xl p-4 flex gap-3">
+            <Sparkles size={20} className="text-[color:var(--u)] flex-shrink-0 mt-0.5" />
+            <div className="text-sm font-semibold text-ink-700">
               This chore will appear on every kid's dashboard. The first {maxClaimers > 1 ? `${maxClaimers} kids` : 'kid'} to check it off {maxClaimers > 1 ? 'claim' : 'claims'} the earnings, and it won't show up {maxClaimers > 1 ? 'for them' : ''} again until it resets.
             </div>
           </div>
@@ -2159,45 +2228,45 @@ function AddChoreModal({ kids, onAdd, onClose }) {
 
         {mode === 'extra' && (
           <Field label="How many kids can claim this?">
-            <div className="flex items-center gap-3 bg-stone-50 rounded-2xl p-3 border-2 border-stone-200">
+            <div className="flex items-center gap-3 bg-paper rounded-2xl p-3 border-2 border-ink-200">
               <button type="button"
                       onClick={() => setMaxClaimers(Math.max(1, maxClaimers - 1))}
                       disabled={maxClaimers <= 1}
-                      className="w-10 h-10 rounded-xl bg-white shadow-sm font-black text-lg disabled:opacity-40 hover:bg-stone-100 transition">−</button>
+                      className="w-10 h-10 rounded-xl bg-white shadow-sm font-black text-lg disabled:opacity-40 hover:bg-ink-50 transition">−</button>
               <div className="flex-1 text-center">
-                <div className="display-font text-2xl font-black text-stone-900">{maxClaimers}</div>
-                <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">
+                <div className="mono font-extrabold text-2xl text-ink-900">{maxClaimers}</div>
+                <div className="mono-up text-ink-500">
                   {maxClaimers === 1 ? 'one kid · first wins' : `up to ${maxClaimers} kids can claim`}
                 </div>
               </div>
               <button type="button"
                       onClick={() => setMaxClaimers(Math.min(Math.max(1, kids.length), maxClaimers + 1))}
                       disabled={maxClaimers >= Math.max(1, kids.length)}
-                      className="w-10 h-10 rounded-xl bg-white shadow-sm font-black text-lg disabled:opacity-40 hover:bg-stone-100 transition">+</button>
+                      className="w-10 h-10 rounded-xl bg-white shadow-sm font-black text-lg disabled:opacity-40 hover:bg-ink-50 transition">+</button>
             </div>
-            <div className="text-[11px] text-stone-500 font-semibold mt-2 px-1">
+            <div className="text-[11px] text-ink-500 font-semibold mt-2 px-1">
               Example: "Unload dishwasher" = 1 kid, "Pull weeds" = 3 kids.
             </div>
           </Field>
         )}
 
         {mode === 'assigned' && (
-          <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-amber-50 border-amber-300' : 'bg-stone-50 border-stone-200 hover:border-stone-300'}`}>
+          <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-[color:var(--u-tint)] border-[color:var(--u)]' : 'bg-paper border-ink-200 hover:border-ink-200'}`}>
             <input type="checkbox" checked={isRequiredForExtras}
                    onChange={(e) => setIsRequiredForExtras(e.target.checked)}
-                   className="mt-0.5 w-5 h-5 rounded accent-amber-500 cursor-pointer flex-shrink-0" />
+                   className="mt-0.5 w-5 h-5 rounded accent-[color:var(--u)] cursor-pointer flex-shrink-0" />
             <div className="flex-1">
-              <div className="font-black text-sm text-stone-900 flex items-center gap-1">
+              <div className="font-black text-sm text-ink-900 flex items-center gap-1">
                 <Lock size={12} /> Required for Extra Chores
               </div>
-              <div className="text-xs font-semibold text-stone-600 mt-1">
+              <div className="text-xs font-semibold text-ink-700 mt-1">
                 Required chores gate access to Extra Chores. A kid unlocks Extras if they finished all required chores last week OR finish them this week.
               </div>
             </div>
           </label>
         )}
 
-        <button disabled={!canSubmit}
+        <PillButton kind="primary" size="lg" disabled={!canSubmit}
                 onClick={() => onAdd({
                   title: title.trim(),
                   value: parseFloat(value),
@@ -2206,10 +2275,10 @@ function AddChoreModal({ kids, onAdd, onClose }) {
                   isRequiredForExtras: mode === 'assigned' ? isRequiredForExtras : false,
                   ...(mode === 'extra' ? { isExtra: true, maxClaimers } : { assignedToIds }),
                 })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+                className="w-full">
           {mode === 'extra' ? 'Add extra chore' :
            assignedToIds.length > 1 ? `Add chore to ${assignedToIds.length} kids` : 'Add chore'}
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2229,13 +2298,13 @@ function EditKidModal({ kid, onSave, onClose }) {
       <div className="space-y-4">
         <Field label="Name">
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Avatar">
-          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_KID_AVATARS.map(a => (
               <button key={a} type="button" onClick={() => setAvatar(a)}
-                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-amber-200 scale-110' : 'hover:bg-stone-200'}`}>{a}</button>
+                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-[color:var(--u-tint)] scale-110' : 'hover:bg-ink-100'}`}>{a}</button>
             ))}
           </div>
         </Field>
@@ -2251,18 +2320,18 @@ function EditKidModal({ kid, onSave, onClose }) {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Age">
             <input type="number" min="1" max="25" value={age} onChange={(e) => setAge(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           <Field label="Weekly bonus ($)">
             <input type="number" step="0.5" min="0" value={weeklyAllowance} onChange={(e) => setWeeklyAllowance(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
         </div>
-        <button disabled={!canSubmit}
+        <PillButton kind="primary" size="lg" disabled={!canSubmit}
                 onClick={() => onSave({ name: name.trim(), avatar, color, age: parseInt(age), weeklyAllowance: parseFloat(weeklyAllowance) || 0 })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+                className="w-full">
           Save changes
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2280,13 +2349,13 @@ function AddKidModal({ onAdd, onClose }) {
       <div className="space-y-4">
         <Field label="Name">
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Maya" autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Avatar">
-          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_KID_AVATARS.map(a => (
               <button key={a} type="button" onClick={() => setAvatar(a)}
-                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-amber-200 scale-110' : 'hover:bg-stone-200'}`}>{a}</button>
+                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-[color:var(--u-tint)] scale-110' : 'hover:bg-ink-100'}`}>{a}</button>
             ))}
           </div>
         </Field>
@@ -2302,17 +2371,17 @@ function AddKidModal({ onAdd, onClose }) {
         <div className="grid grid-cols-2 gap-3">
           <Field label="Age">
             <input type="number" min="1" max="25" value={age} onChange={(e) => setAge(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           <Field label="Weekly bonus ($)">
             <input type="number" step="0.5" min="0" value={weeklyAllowance} onChange={(e) => setWeeklyAllowance(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
         </div>
-        <button disabled={!canSubmit} onClick={() => onAdd({ name: name.trim(), age: parseInt(age), avatar, color, weeklyAllowance: parseFloat(weeklyAllowance) || 0 })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" disabled={!canSubmit} onClick={() => onAdd({ name: name.trim(), age: parseInt(age), avatar, color, weeklyAllowance: parseFloat(weeklyAllowance) || 0 })}
+                className="w-full">
           Add kid
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2329,13 +2398,13 @@ function AddParentModal({ onAdd, onClose }) {
       <div className="space-y-4">
         <Field label="Name">
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Grandma" autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Avatar">
-          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_PARENT_AVATARS.map(a => (
               <button key={a} type="button" onClick={() => setAvatar(a)}
-                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-amber-200 scale-110' : 'hover:bg-stone-200'}`}>{a}</button>
+                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'bg-[color:var(--u-tint)] scale-110' : 'hover:bg-ink-100'}`}>{a}</button>
             ))}
           </div>
         </Field>
@@ -2350,12 +2419,12 @@ function AddParentModal({ onAdd, onClose }) {
         </Field>
         <Field label="4-digit PIN">
           <input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="••••"
-                 className="w-full text-center text-2xl font-black tracking-[0.5em] bg-stone-100 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full text-center text-2xl mono font-extrabold tracking-[0.5em] bg-ink-50 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
-        <button disabled={!canSubmit} onClick={() => onAdd({ name: name.trim(), avatar, pin, color })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" disabled={!canSubmit} onClick={() => onAdd({ name: name.trim(), avatar, pin, color })}
+                className="w-full">
           Add parent
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2371,14 +2440,14 @@ function EditParentModal({ parent, onSave, onClose }) {
       <div className="space-y-4">
         <Field label="Name">
           <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Avatar">
-          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-6 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_PARENT_AVATARS.map(a => (
               <button key={a} type="button" onClick={() => setAvatar(a)}
-                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'scale-110' : 'hover:bg-stone-200'}`}
-                      style={avatar === a ? { background: color + '40' } : {}}>{a}</button>
+                      style={{ '--u': color, ...(avatar === a && { background: 'color-mix(in oklab, var(--u) 25%, white)' }) }}
+                      className={`text-3xl p-2 rounded-xl transition ${avatar === a ? 'scale-110' : 'hover:bg-ink-100'}`}>{a}</button>
             ))}
           </div>
         </Field>
@@ -2391,10 +2460,10 @@ function EditParentModal({ parent, onSave, onClose }) {
             ))}
           </div>
         </Field>
-        <button disabled={!canSubmit} onClick={() => onSave({ name: name.trim(), avatar, color })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" disabled={!canSubmit} onClick={() => onSave({ name: name.trim(), avatar, color })}
+                className="w-full">
           Save changes
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2422,23 +2491,22 @@ function ChangePinModal({ parent, onClose }) {
       {success ? (
         <div className="text-center py-6">
           <div className="text-5xl mb-3">✅</div>
-          <div className="font-black text-stone-900">PIN updated!</div>
+          <div className="font-black text-ink-900">PIN updated!</div>
         </div>
       ) : (
         <div className="space-y-4">
           <Field label="Current PIN">
             <input type="password" inputMode="numeric" value={currentPin} onChange={(e) => setCurrentPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="••••" autoFocus
-                   className="w-full text-center text-2xl font-black tracking-[0.5em] bg-stone-100 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full text-center text-2xl mono font-extrabold tracking-[0.5em] bg-ink-50 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           <Field label="New PIN">
             <input type="password" inputMode="numeric" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="••••"
-                   className="w-full text-center text-2xl font-black tracking-[0.5em] bg-stone-100 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full text-center text-2xl mono font-extrabold tracking-[0.5em] bg-ink-50 rounded-2xl px-4 py-3 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           {error && <div className="text-sm font-bold text-red-600 bg-red-50 rounded-xl p-3">{error}</div>}
-          <button disabled={!canSubmit} onClick={submit}
-                  className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+          <PillButton kind="primary" size="lg" className="w-full" disabled={!canSubmit} onClick={submit}>
             Update PIN
-          </button>
+          </PillButton>
         </div>
       )}
     </ModalShell>
@@ -2451,7 +2519,7 @@ function PromoteButton({ cc, kid, family, reload }) {
   return (
     <>
       <button onClick={() => setOpen(true)}
-        className="text-[10px] font-black text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-2 py-1 rounded-full transition whitespace-nowrap">
+        className="mono-up text-ink-700 bg-ink-50 hover:bg-ink-100 border border-ink-200 px-2 py-1 rounded-full transition whitespace-nowrap">
         + Make a chore
       </button>
       {open && (
@@ -2509,41 +2577,42 @@ function PromoteToChoreModal({ cc, kid, family, onClose, onDone }) {
 
   return (
     <ModalShell onClose={onClose} title="Make this a chore">
-      <div className="space-y-4">
-        <div className="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-3 text-xs font-semibold text-indigo-900">
+      <div className="space-y-4" style={{ '--u': kid?.color || '#FFC233' }}>
+        <div className="bg-[color:var(--u-tint)] rounded-2xl p-3 text-xs font-semibold text-ink-700">
           This will create a new chore based on "{cc.title}". The original "Other" entry stays in History.
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-1 block">Chore name</label>
+          <label className="mono-up text-ink-500 mb-1 block">Chore name</label>
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={60}
-            className="w-full px-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-indigo-300 text-stone-900 font-semibold" />
+            className="w-full px-4 py-3 rounded-2xl bg-ink-50 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 font-semibold" />
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">Chore type</label>
+          <label className="mono-up text-ink-500 mb-2 block">Chore type</label>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={() => setMode('required')}
-              className={`py-3 rounded-2xl font-black text-sm transition border-2 ${mode === 'required' ? 'bg-indigo-500 text-white border-indigo-500' : 'bg-stone-100 text-stone-700 border-transparent hover:bg-stone-200'}`}>
+              className={`py-3 rounded-2xl font-bold text-sm transition border-2 ${mode === 'required' ? 'bg-ink-900 text-white border-ink-900' : 'bg-ink-50 text-ink-700 border-transparent hover:bg-ink-100'}`}>
               🔒 Required chore
             </button>
             <button onClick={() => setMode('extra')}
-              className={`py-3 rounded-2xl font-black text-sm transition border-2 ${mode === 'extra' ? 'bg-amber-400 text-stone-900 border-amber-400' : 'bg-stone-100 text-stone-700 border-transparent hover:bg-stone-200'}`}>
+              className={`py-3 rounded-2xl font-bold text-sm transition border-2 ${mode === 'extra' ? 'bg-[color:var(--u)] text-white border-[color:var(--u)]' : 'bg-ink-50 text-ink-700 border-transparent hover:bg-ink-100'}`}>
               ⭐ Extra chore
             </button>
           </div>
-          <div className="text-xs text-stone-500 font-semibold mt-1">
+          <div className="text-xs text-ink-500 font-semibold mt-1">
             {mode === 'required' ? 'Assigned to a specific kid and counts toward their bonus.' : 'Anyone in the family can claim this for extra cash.'}
           </div>
         </div>
 
         {mode === 'required' && family.kids.length > 1 && (
           <div>
-            <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">Assign to</label>
+            <label className="mono-up text-ink-500 mb-2 block">Assign to</label>
             <div className="flex gap-2 flex-wrap">
               {family.kids.map(k => (
                 <button key={k.id} onClick={() => setAssignedTo(k.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-bold text-sm transition border-2 ${assignedTo === k.id ? 'border-indigo-400 bg-indigo-50' : 'border-stone-200 hover:border-stone-300 bg-white'}`}>
+                  style={{ '--u': k.color }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-2xl font-bold text-sm transition border-2 ${assignedTo === k.id ? 'border-[color:var(--u)] bg-[color:var(--u-tint)]' : 'border-ink-200 hover:border-ink-300 bg-white'}`}>
                   <span>{k.avatar}</span><span>{k.name}</span>
                 </button>
               ))}
@@ -2552,11 +2621,11 @@ function PromoteToChoreModal({ cc, kid, family, onClose, onDone }) {
         )}
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">Frequency</label>
+          <label className="mono-up text-ink-500 mb-2 block">Frequency</label>
           <div className="grid grid-cols-2 gap-2">
             {CADENCE_OPTIONS.map(opt => (
               <button key={opt.value} onClick={() => setFrequency(opt.value)}
-                className={`py-2 rounded-xl font-black text-sm transition ${frequency === opt.value ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+                className={`py-2 rounded-xl font-black text-sm transition ${frequency === opt.value ? 'bg-ink-900 text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100'}`}>
                 {opt.label}
               </button>
             ))}
@@ -2564,18 +2633,17 @@ function PromoteToChoreModal({ cc, kid, family, onClose, onDone }) {
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-1 block">Dollar value</label>
+          <label className="mono-up text-ink-500 mb-1 block">Dollar value</label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-black">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 mono text-ink-500 font-extrabold">$</span>
             <input type="number" min="0" step="0.25" value={value} onChange={(e) => setValue(e.target.value)}
-              className="w-full pl-7 pr-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-indigo-300 text-stone-900 font-semibold" />
+              className="w-full pl-7 pr-4 py-3 rounded-2xl bg-ink-50 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 mono font-semibold" />
           </div>
         </div>
 
-        <button onClick={handleSave} disabled={!canSave || saving}
-          className="w-full py-3 rounded-2xl font-black bg-indigo-500 hover:bg-indigo-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition shadow-lg shadow-indigo-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" className="w-full" onClick={handleSave} disabled={!canSave || saving}>
           {saving ? 'Saving…' : 'Create chore'}
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2587,9 +2655,10 @@ function PickKidThenOtherModal({ family, onClose, onPick }) {
       <div className="grid grid-cols-2 gap-3">
         {family.kids.map(kid => (
           <button key={kid.id} onClick={() => onPick(kid.id)}
-            className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-stone-200 hover:border-amber-300 hover:bg-amber-50 transition">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: kid.color + '30' }}>{kid.avatar}</div>
-            <div className="font-black text-stone-900">{kid.name}</div>
+            style={{ '--u': kid.color }}
+            className="flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-ink-200 hover:border-[color:var(--u)] hover:bg-[color:var(--u-tint)] transition">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
+            <div className="font-black text-ink-900">{kid.name}</div>
           </button>
         ))}
       </div>
@@ -2609,28 +2678,28 @@ function OtherChoreModal({ kid, onClose, onSubmit, isParent }) {
 
   return (
     <ModalShell onClose={onClose} title={isParent ? `Log for ${kid.name}` : 'What did you do?'}>
-      <div className="space-y-4">
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3 text-xs font-semibold text-amber-900">
+      <div className="space-y-4" style={{ '--u': kid.color }}>
+        <div className="bg-[color:var(--u-tint)] rounded-2xl p-3 text-xs font-semibold text-ink-700">
           {isParent
             ? 'Log something this kid did. Set the dollar value and it\'ll be added right away.'
             : 'Describe what you did. Your parent will check it and decide how much it\'s worth.'}
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-1 block">What was it?</label>
+          <label className="mono-up text-ink-500 mb-1 block">What was it?</label>
           <input
             type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus maxLength={60}
             placeholder="e.g. Helped unload groceries"
-            className="w-full px-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-amber-300 text-stone-900 font-semibold"
+            className="w-full px-4 py-3 rounded-2xl bg-ink-50 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 font-semibold"
           />
         </div>
 
         <div>
-          <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">Pick an icon</label>
+          <label className="mono-up text-ink-500 mb-2 block">Pick an icon</label>
           <div className="grid grid-cols-6 gap-2">
             {ICONS.map(ic => (
               <button key={ic} onClick={() => setIcon(ic)}
-                className={`aspect-square rounded-2xl text-2xl flex items-center justify-center transition ${icon === ic ? 'bg-amber-400 ring-2 ring-amber-500' : 'bg-stone-100 hover:bg-stone-200'}`}>
+                className={`aspect-square rounded-2xl text-2xl flex items-center justify-center transition ${icon === ic ? 'bg-[color:var(--u-tint)] ring-2 ring-[color:var(--u)]' : 'bg-ink-50 hover:bg-ink-100'}`}>
                 {ic}
               </button>
             ))}
@@ -2639,30 +2708,32 @@ function OtherChoreModal({ kid, onClose, onSubmit, isParent }) {
 
         {isParent && (
           <div>
-            <label className="text-xs font-black uppercase tracking-wider text-stone-500 mb-2 block">How much is it worth?</label>
+            <label className="mono-up text-ink-500 mb-2 block">How much is it worth?</label>
             <div className="flex gap-2 mb-2">
-              {QUICK_PICKS.map(amt => (
-                <button key={amt} onClick={() => setValue(String(amt.toFixed(2)))}
-                  className={`flex-1 py-2 rounded-xl font-black text-sm transition ${value === amt.toFixed(2) ? 'bg-amber-400 text-stone-900' : 'bg-stone-100 hover:bg-stone-200 text-stone-700'}`}>
-                  ${amt}
-                </button>
-              ))}
+              {QUICK_PICKS.map(amt => {
+                const selected = value === amt.toFixed(2);
+                return (
+                  <PillButton key={amt} kind={selected ? 'primary' : 'glass'} size="sm" className="flex-1" onClick={() => setValue(String(amt.toFixed(2)))}>
+                    <span className="mono">${amt}</span>
+                  </PillButton>
+                );
+              })}
             </div>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-black">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 mono text-ink-500 font-extrabold">$</span>
               <input
                 type="number" min="0" step="0.25" value={value} onChange={(e) => setValue(e.target.value)}
                 placeholder="Custom amount"
-                className="w-full pl-7 pr-4 py-3 rounded-2xl bg-stone-100 outline-none focus:ring-4 focus:ring-amber-300 text-stone-900 font-semibold"
+                className="w-full pl-7 pr-4 py-3 rounded-2xl bg-ink-50 outline-none focus:ring-4 focus:ring-[color:var(--u-tint)] text-ink-900 font-semibold"
               />
             </div>
           </div>
         )}
 
-        <button onClick={() => canSubmit && onSubmit({ title: trimmed, icon, value: isParent ? numericValue : 0 })} disabled={!canSubmit}
-          className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" onClick={() => canSubmit && onSubmit({ title: trimmed, icon, value: isParent ? numericValue : 0 })} disabled={!canSubmit}
+          className="w-full">
           {isParent ? 'Add it' : 'Send for approval'}
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2677,28 +2748,28 @@ function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
 
   return (
     <ModalShell onClose={onClose} title={`Pay ${kid.name}`}>
-      <div className="space-y-4">
+      <div className="space-y-4" style={{ '--u': kid.color }}>
         <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: 'var(--u-tint)' }}>{kid.avatar}</div>
           <div className="flex-1">
-            <div className="text-xs font-bold text-stone-500 uppercase">Unpaid balance</div>
-            <div className="display-font text-2xl font-black text-emerald-700">${currentBalance.toFixed(2)}</div>
+            <div className="mono-up text-ink-500">Unpaid balance</div>
+            <div className="mono font-extrabold text-2xl text-emerald-700">${currentBalance.toFixed(2)}</div>
           </div>
         </div>
 
         <Field label="Amount to pay out">
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</div>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 mono text-ink-500 font-extrabold">$</div>
             <input type="number" step="0.25" min="0" max={currentBalance} value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus
-                   className="w-full bg-stone-100 rounded-2xl pl-8 pr-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl pl-8 pr-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </div>
           <div className="flex gap-2 mt-2">
             <button type="button" onClick={() => setAmount(currentBalance.toFixed(2))}
-                    className="flex-1 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black hover:bg-emerald-200 transition">
+                    className="flex-1 py-2 rounded-xl bg-emerald-100 text-emerald-800 mono text-xs font-extrabold hover:bg-emerald-200 transition">
               Pay all ${currentBalance.toFixed(2)}
             </button>
             <button type="button" onClick={() => setAmount((currentBalance / 2).toFixed(2))}
-                    className="flex-1 py-2 rounded-xl bg-stone-100 text-stone-700 text-xs font-black hover:bg-stone-200 transition">
+                    className="flex-1 py-2 rounded-xl bg-ink-50 text-ink-700 mono text-xs font-extrabold hover:bg-ink-100 transition">
               Half
             </button>
           </div>
@@ -2706,27 +2777,29 @@ function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
 
         <Field label="Payment method">
           <div className="flex gap-2 mb-2">
-            {NOTE_PICKS.map(pick => (
-              <button key={pick} type="button" onClick={() => setNote(pick)}
-                className={`flex-1 py-2 rounded-xl text-xs font-black transition ${note === pick ? 'bg-emerald-500 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
-                {pick}
-              </button>
-            ))}
+            {NOTE_PICKS.map(pick => {
+              const selected = note === pick;
+              return (
+                <button key={pick} type="button" onClick={() => setNote(pick)}
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${selected ? 'bg-emerald-500 text-white' : 'bg-ink-50 text-ink-700 hover:bg-ink-100'}`}>
+                  {pick}
+                </button>
+              );
+            })}
           </div>
           <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Or type a custom note"
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
 
         {!isNaN(amt) && amt > 0 && amt <= currentBalance && (
-          <div className="bg-stone-50 rounded-2xl p-3 text-xs font-bold text-stone-600">
-            After payout: <span className="text-stone-900">${(currentBalance - amt).toFixed(2)}</span> will remain in {kid.name}'s balance.
+          <div className="bg-paper rounded-2xl p-3 text-xs font-bold text-ink-700">
+            After payout: <span className="mono font-extrabold text-ink-900">${(currentBalance - amt).toFixed(2)}</span> will remain in {kid.name}'s balance.
           </div>
         )}
 
-        <button disabled={!canSubmit} onClick={() => onConfirm(amt, note)}
-                className="w-full py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition shadow-lg shadow-emerald-200 disabled:shadow-none">
-          Pay out ${!isNaN(amt) ? amt.toFixed(2) : '0.00'}
-        </button>
+        <PillButton size="lg" className="w-full !bg-emerald-500 !text-white !shadow-none" disabled={!canSubmit} onClick={() => onConfirm(amt, note)}>
+          Pay out <span className="mono font-extrabold">${!isNaN(amt) ? amt.toFixed(2) : '0.00'}</span>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2747,37 +2820,37 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
   return (
     <ModalShell onClose={onClose} title="Edit chore">
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-2 p-1 bg-stone-100 rounded-2xl">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-ink-50 rounded-2xl">
           <button type="button" onClick={() => setMode('assigned')}
-                  className={`py-2.5 rounded-xl text-sm font-black transition ${mode === 'assigned' ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500'}`}>
+                  className={`py-2.5 rounded-xl text-sm font-bold transition ${mode === 'assigned' ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500'}`}>
             Assigned
           </button>
           <button type="button" onClick={() => setMode('extra')}
-                  className={`py-2.5 rounded-xl text-sm font-black transition flex items-center justify-center gap-1 ${mode === 'extra' ? 'bg-white text-amber-700 shadow-sm' : 'text-stone-500'}`}>
+                  className={`py-2.5 rounded-xl text-sm font-bold transition flex items-center justify-center gap-1 ${mode === 'extra' ? 'bg-white text-[color:var(--u)] shadow-sm' : 'text-ink-500'}`}>
             <Sparkles size={14} /> Extra
           </button>
         </div>
 
         <Field label="Name">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Icon">
-          <div className="grid grid-cols-7 gap-2 max-h-52 overflow-y-auto p-2 bg-stone-50 rounded-2xl">
+          <div className="grid grid-cols-7 gap-2 max-h-52 overflow-y-auto p-2 bg-paper rounded-2xl">
             {DEDUPED_EMOJI_OPTIONS.map(e => (
               <button key={e} type="button" onClick={() => setIcon(e)}
-                      className={`text-2xl p-2 rounded-xl transition ${icon === e ? 'bg-amber-200 scale-110' : 'hover:bg-stone-200'}`}>{e}</button>
+                      className={`text-2xl p-2 rounded-xl transition ${icon === e ? 'bg-[color:var(--u-tint)] scale-110' : 'hover:bg-ink-100'}`}>{e}</button>
             ))}
           </div>
         </Field>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Value ($)">
             <input type="number" step="0.25" min="0" value={value} onChange={(e) => setValue(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl px-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </Field>
           <Field label="How often">
             <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
-                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300">
+                    className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]">
               {CADENCE_OPTIONS.map(c => (
                 <option key={c.value} value={c.value}>{c.label}</option>
               ))}
@@ -2790,8 +2863,8 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
             <div className="grid grid-cols-3 gap-2">
               {kids.map(kid => (
                 <button key={kid.id} type="button" onClick={() => setAssignedTo(kid.id)}
-                        className={`relative flex flex-col items-center gap-1 p-3 rounded-2xl font-bold transition border-2 ${assignedTo === kid.id ? 'bg-white shadow-md' : 'bg-stone-100 hover:bg-stone-200 border-transparent opacity-60'}`}
-                        style={{ borderColor: assignedTo === kid.id ? kid.color : 'transparent' }}>
+                        style={{ '--u': kid.color, borderColor: assignedTo === kid.id ? 'var(--u)' : 'transparent' }}
+                        className={`relative flex flex-col items-center gap-1 p-3 rounded-2xl font-bold transition border-2 ${assignedTo === kid.id ? 'bg-white shadow-md' : 'bg-ink-50 hover:bg-ink-100 opacity-60'}`}>
                   <div className="text-2xl">{kid.avatar}</div>
                   <div className="text-sm">{kid.name}</div>
                 </button>
@@ -2801,22 +2874,22 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
         )}
 
         {mode === 'assigned' && (
-          <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-amber-50 border-amber-300' : 'bg-stone-50 border-stone-200 hover:border-stone-300'}`}>
+          <label className={`flex items-start gap-3 p-4 rounded-2xl border-2 cursor-pointer transition ${isRequiredForExtras ? 'bg-[color:var(--u-tint)] border-[color:var(--u)]' : 'bg-paper border-ink-200 hover:border-ink-200'}`}>
             <input type="checkbox" checked={isRequiredForExtras}
                    onChange={(e) => setIsRequiredForExtras(e.target.checked)}
-                   className="mt-0.5 w-5 h-5 rounded accent-amber-500 cursor-pointer flex-shrink-0" />
+                   className="mt-0.5 w-5 h-5 rounded accent-[color:var(--u)] cursor-pointer flex-shrink-0" />
             <div className="flex-1">
-              <div className="font-black text-sm text-stone-900 flex items-center gap-1">
+              <div className="font-black text-sm text-ink-900 flex items-center gap-1">
                 <Lock size={12} /> Required for Extra Chores
               </div>
-              <div className="text-xs font-semibold text-stone-600 mt-1">
+              <div className="text-xs font-semibold text-ink-700 mt-1">
                 Required chores gate access to Extra Chores. A kid unlocks Extras if they finished all required chores last week OR finish them this week.
               </div>
             </div>
           </label>
         )}
 
-        <button disabled={!canSubmit}
+        <PillButton kind="primary" size="lg" disabled={!canSubmit}
                 onClick={() => onSave({
                   title: title.trim(),
                   value: parseFloat(value),
@@ -2826,9 +2899,9 @@ function EditChoreModal({ chore, kids, onSave, onClose }) {
                   isRequiredForExtras: mode === 'assigned' ? isRequiredForExtras : false,
                   maxClaimers: mode === 'extra' ? maxClaimers : 1,
                 })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+                className="w-full">
           Save changes
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2845,27 +2918,27 @@ function AddGoalModal({ kid, onAdd, onClose }) {
       <div className="space-y-4">
         <Field label="What are they saving for?">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Nintendo Switch game" autoFocus
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                 className="w-full bg-ink-50 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
         </Field>
         <Field label="Icon">
           <div className="grid grid-cols-6 gap-2">
             {ICONS.map(i => (
               <button key={i} type="button" onClick={() => setIcon(i)}
-                      className={`text-3xl p-2 rounded-xl transition ${icon === i ? 'bg-amber-200 scale-110' : 'bg-stone-100 hover:bg-stone-200'}`}>{i}</button>
+                      className={`text-3xl p-2 rounded-xl transition ${icon === i ? 'bg-[color:var(--u-tint)] scale-110' : 'bg-ink-50 hover:bg-ink-100'}`}>{i}</button>
             ))}
           </div>
         </Field>
         <Field label="Target amount">
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</div>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 mono text-ink-500 font-extrabold">$</div>
             <input type="number" step="1" min="1" value={target} onChange={(e) => setTarget(e.target.value)}
-                   className="w-full bg-stone-100 rounded-2xl pl-8 pr-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-ink-50 rounded-2xl pl-8 pr-4 py-3 mono font-semibold outline-none focus:ring-4 focus:ring-[color:var(--u-tint)]" />
           </div>
         </Field>
-        <button disabled={!canSubmit} onClick={() => onAdd({ kidId: kid.id, title: title.trim(), icon, target: parseFloat(target) })}
-                className="w-full py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 disabled:bg-stone-200 disabled:text-stone-400 text-stone-900 transition shadow-lg shadow-amber-200 disabled:shadow-none">
+        <PillButton kind="primary" size="lg" disabled={!canSubmit} onClick={() => onAdd({ kidId: kid.id, title: title.trim(), icon, target: parseFloat(target) })}
+                className="w-full">
           Add goal
-        </button>
+        </PillButton>
       </div>
     </ModalShell>
   );
@@ -2887,8 +2960,8 @@ function ConfirmDeleteModal({ item, onConfirm, onCancel }) {
           </div>
         </div>
         <div className="flex gap-3">
-          <button onClick={onCancel} className="flex-1 py-3 rounded-2xl font-black bg-stone-100 hover:bg-stone-200 text-stone-700 transition">Cancel</button>
-          <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl font-black bg-red-500 hover:bg-red-600 text-white transition shadow-lg shadow-red-200">Delete</button>
+          <PillButton kind="ghost" size="lg" className="flex-1" onClick={onCancel}>Cancel</PillButton>
+          <PillButton kind="danger" size="lg" className="flex-1" onClick={onConfirm}>Delete</PillButton>
         </div>
       </div>
     </ModalShell>
@@ -2898,7 +2971,7 @@ function ConfirmDeleteModal({ item, onConfirm, onCancel }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="text-xs font-black uppercase tracking-widest text-stone-500 block mb-2">{label}</label>
+      <label className="mono-up text-ink-500 block mb-2">{label}</label>
       {children}
     </div>
   );
@@ -2906,23 +2979,23 @@ function Field({ label, children }) {
 
 function NavButton({ icon, label, active, onClick, badge }) {
   return (
-    <button onClick={onClick} className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all relative ${active ? 'text-amber-600' : 'text-stone-400 hover:text-stone-700'}`}>
+    <button onClick={onClick} className={`flex-1 flex flex-col items-center gap-1 py-2 px-3 rounded-2xl transition-all relative ${active ? 'text-[color:var(--u)]' : 'text-ink-300 hover:text-white'}`}>
       <div className="relative">
         {icon}
         {badge > 0 && <div className="absolute -top-1.5 -right-2 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-black flex items-center justify-center">{badge}</div>}
       </div>
-      <div className={`text-[11px] font-black ${active ? 'text-amber-600' : ''}`}>{label}</div>
-      {active && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-amber-500" />}
+      <div className={`text-[11px] font-black ${active ? 'text-[color:var(--u)]' : ''}`}>{label}</div>
+      {active && <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[color:var(--u)]" />}
     </button>
   );
 }
 
 function FullPageSpinner() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)' }}>
+    <div className="ambient-stage min-h-screen flex items-center justify-center">
       <div className="text-center">
-        <Loader2 size={40} className="animate-spin text-amber-600 mx-auto mb-3" />
-        <div className="font-black text-stone-700">Loading Chorely...</div>
+        <Loader2 size={40} className="animate-spin text-[color:var(--u)] mx-auto mb-3" />
+        <div className="font-black text-ink-700">Loading Chorely...</div>
       </div>
     </div>
   );
@@ -2930,14 +3003,12 @@ function FullPageSpinner() {
 
 function ErrorScreen({ message, onRetry }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-stone-50">
-      <div className="bg-white rounded-3xl p-8 max-w-md text-center shadow-sm">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: '#0A0908' }}>
+      <div className="glass-strong rounded-3xl p-8 max-w-md text-center">
         <div className="text-5xl mb-3">😬</div>
-        <div className="font-black text-xl text-stone-900 mb-2">Connection problem</div>
-        <div className="text-sm text-stone-500 mb-5">{message}</div>
-        <button onClick={onRetry} className="px-6 py-3 rounded-2xl font-black bg-amber-400 hover:bg-amber-500 text-stone-900 transition">
-          Try again
-        </button>
+        <div className="font-black text-xl text-ink-900 mb-2">Connection problem</div>
+        <div className="text-sm text-ink-500 mb-5">{message}</div>
+        <PillButton kind="primary" size="lg" onClick={onRetry}>Try again</PillButton>
       </div>
     </div>
   );
