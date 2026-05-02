@@ -2045,9 +2045,15 @@ function Manage({ family, reload, currentUser }) {
 function ModalShell({ children, onClose, title }) {
   return (
     <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-t-3xl md:rounded-3xl p-5 w-full md:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto pop-in"
-           onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+      <div
+        className="bg-white rounded-t-3xl md:rounded-3xl p-5 w-full md:max-w-md shadow-2xl overflow-y-auto pop-in"
+        style={{
+          // Reserve space for the bottom nav (~64px) plus iPhone home indicator safe area
+          maxHeight: 'calc(100vh - 80px - env(safe-area-inset-bottom))',
+          paddingBottom: 'calc(1.25rem + 80px + env(safe-area-inset-bottom))',
+        }}
+        onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-2 -mx-5 px-5 -mt-5 pt-5 z-10">
           <h3 className="display-font text-xl font-black text-stone-900">{title}</h3>
           <button onClick={onClose} className="w-9 h-9 rounded-xl hover:bg-stone-100 flex items-center justify-center transition"><X size={18} /></button>
         </div>
