@@ -280,9 +280,8 @@ export default function App() {
   };
 
   // ============ BALANCE / PAYOUTS / GOALS / STREAKS ============
-  // Total lifetime earnings (all approved completions across all time + weekly bonuses for perfect weeks in the past)
-  // Lifetime earnings: sum of all approved chore values + approved "Other" entries + earned weekly bonuses.
-  // Weekly bonuses are credited automatically once a perfect week is achieved.
+  // Lifetime earnings: sum of all approved chore values + approved "Other" entries + all earned weekly allowances.
+  // Allowances are credited automatically once a perfect week is achieved (all required chores done).
   const getLifetimeEarnings = (kidId) => {
     if (!family) return 0;
     const choreSum = family.completions
@@ -295,57 +294,13 @@ export default function App() {
       .filter(c => c.kidId === kidId && c.status === 'approved')
       .reduce((sum, c) => sum + (c.value || 0), 0);
 
-    // Walk back through past weeks and add bonuses for any "perfect week" the kid achieved.
-    // Only count fully-completed past weeks; the current week's bonus is added only once it's earned.
-    let bonusSum = 0;
-    for (let w = 0; w < 104; w++) { // up to 2 years back
-      const weekData = getBonusForWeek(kidId, w);
-      bonusSum += weekData;
+    // Sum allowances from this week and all past weeks (single source of truth: getWeekEarnings)
+    let allowanceSum = 0;
+    for (let w = 0; w < 104; w++) {
+      const weekData = getWeekEarnings(kidId, w);
+      allowanceSum += (weekData.bonus || 0);
     }
-    return choreSum + customSum + bonusSum;
-  };
-
-  // Compute just the bonus for a given week offset (0 = this week, 1 = last week, etc.)
-  // Returns the bonus amount (kid.weeklyAllowance) if all required chores were completed that week, else 0.
-  const getBonusForWeek = (kidId, weekOffset) => {
-    if (!family) return 0;
-    const kid = family.kids.find(k => k.id === kidId);
-    if (!kid || !kid.weeklyAllowance) return 0;
-    const requiredChores = family.chores.filter(c => c.assignedTo === kidId && c.isRequiredForExtras);
-    if (requiredChores.length === 0) return 0;
-
-    const today = new Date(todayStr());
-    const dayOfWeek = today.getDay();
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - dayOfWeek - (weekOffset * 7));
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-    const weekEndStr = weekEnd.toISOString().split('T')[0];
-
-    const weekDates = [];
-    const walker = new Date(weekStart);
-    while (walker <= weekEnd) {
-      weekDates.push(walker.toISOString().split('T')[0]);
-      walker.setDate(walker.getDate() + 1);
-    }
-
-    const allDone = requiredChores.every(ch => {
-      const completionsForThis = family.completions.filter(
-        c => c.kidId === kidId && c.choreId === ch.id && c.status === 'approved'
-          && c.date >= weekStartStr && c.date <= weekEndStr
-      );
-      if (ch.frequency === 'daily') {
-        const completedDates = new Set(completionsForThis.map(c => c.date));
-        // For current week, only check days up through today (don't penalize for unfinished days)
-        const todayLocal = todayStr();
-        const datesNeeded = weekOffset === 0 ? weekDates.filter(d => d <= todayLocal) : weekDates;
-        return datesNeeded.every(d => completedDates.has(d));
-      }
-      return completionsForThis.length > 0;
-    });
-
-    return allDone ? kid.weeklyAllowance : 0;
+    return choreSum + customSum + allowanceSum;
   };
 
   const getTotalPaidOut = (kidId) => {
@@ -966,7 +921,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
             {earnings.allDone && <div>🎁 ${currentUser.weeklyAllowance.toFixed(2)}</div>}
           </div>
           {!earnings.allDone && chores.length > 0 && (
-            <div className="mt-2 text-xs font-semibold opacity-80">🎯 Finish all your required chores this week for a ${currentUser.weeklyAllowance} bonus!</div>
+            <div className="mt-2 text-xs font-semibold opacity-80">🎯 Finish all your required chores this week to earn your ${currentUser.weeklyAllowance} allowance!</div>
           )}
         </div>
       </div>
@@ -1037,7 +992,7 @@ function Dashboard({ currentUser, family, onToggleChore, isChoreCompletedToday, 
         <div className="slide-up" style={{ animationDelay: '0.25s' }}>
           <ExtraChoresSection
             title="Extra Chores"
-            subtitle="Finish your required chores first, then claim extras for bonus cash!"
+            subtitle="Finish your required chores first, then claim extras for extra cash!"
             extrasByCadence={extrasByCadence}
             family={family}
             getExtraClaimsInPeriod={getExtraClaimsInPeriod}
@@ -1713,7 +1668,7 @@ function HistoryView({ currentUser, family, getWeekEarnings, reload }) {
             <div className="display-font text-xl font-black text-stone-900 mt-1">${(weekData.extraEarnings || 0).toFixed(2)}</div>
           </div>
           <div className="bg-stone-50 rounded-2xl p-3">
-            <div className="text-[10px] font-bold text-stone-500 uppercase">Bonus</div>
+            <div className="text-[10px] font-bold text-stone-500 uppercase">Allowance</div>
             <div className="display-font text-xl font-black mt-1" style={{ color: weekData.bonus > 0 ? '#059669' : '#A8A29E' }}>${weekData.bonus.toFixed(2)}</div>
           </div>
         </div>
@@ -1873,7 +1828,7 @@ function Manage({ family, reload, currentUser }) {
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-2xl" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
               <div className="flex-1">
                 <div className="font-black text-stone-900">{kid.name}</div>
-                <div className="text-xs text-stone-500 font-semibold">Age {kid.age} · ${kid.weeklyAllowance}/week bonus</div>
+                <div className="text-xs text-stone-500 font-semibold">Age {kid.age} · ${kid.weeklyAllowance}/week allowance</div>
               </div>
               <button onClick={() => setEditingKid(kid)}
                       className="w-10 h-10 rounded-xl hover:bg-amber-100 text-stone-500 hover:text-amber-700 flex items-center justify-center transition"
@@ -2090,11 +2045,11 @@ function Manage({ family, reload, currentUser }) {
 function ModalShell({ children, onClose, title }) {
   return (
     <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm flex items-end md:items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white rounded-t-3xl md:rounded-3xl p-6 w-full md:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto pop-in"
+      <div className="bg-white rounded-t-3xl md:rounded-3xl p-5 w-full md:max-w-md shadow-2xl max-h-[90vh] overflow-y-auto pop-in"
            onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="display-font text-2xl font-black text-stone-900">{title}</h3>
-          <button onClick={onClose} className="w-10 h-10 rounded-xl hover:bg-stone-100 flex items-center justify-center transition"><X size={20} /></button>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="display-font text-xl font-black text-stone-900">{title}</h3>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl hover:bg-stone-100 flex items-center justify-center transition"><X size={18} /></button>
         </div>
         {children}
       </div>
@@ -2328,7 +2283,7 @@ function EditKidModal({ kid, onSave, onClose }) {
             <input type="number" min="1" max="25" value={age} onChange={(e) => setAge(e.target.value)}
                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
           </Field>
-          <Field label="Weekly bonus ($)">
+          <Field label="Weekly allowance ($)">
             <input type="number" step="0.5" min="0" value={weeklyAllowance} onChange={(e) => setWeeklyAllowance(e.target.value)}
                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
           </Field>
@@ -2379,7 +2334,7 @@ function AddKidModal({ onAdd, onClose }) {
             <input type="number" min="1" max="25" value={age} onChange={(e) => setAge(e.target.value)}
                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
           </Field>
-          <Field label="Weekly bonus ($)">
+          <Field label="Weekly allowance ($)">
             <input type="number" step="0.5" min="0" value={weeklyAllowance} onChange={(e) => setWeeklyAllowance(e.target.value)}
                    className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
           </Field>
@@ -2608,7 +2563,7 @@ function PromoteToChoreModal({ cc, kid, family, onClose, onDone }) {
             </button>
           </div>
           <div className="text-xs text-stone-500 font-semibold mt-1">
-            {mode === 'required' ? 'Assigned to a specific kid and counts toward their bonus.' : 'Anyone in the family can claim this for extra cash.'}
+            {mode === 'required' ? 'Assigned to a specific kid and counts toward their allowance.' : 'Anyone in the family can claim this for extra cash.'}
           </div>
         </div>
 
@@ -2746,60 +2701,66 @@ function OtherChoreModal({ kid, onClose, onSubmit, isParent }) {
 function PayoutModal({ kid, currentBalance, onClose, onConfirm }) {
   const [amount, setAmount] = useState(String(currentBalance.toFixed(2)));
   const [note, setNote] = useState('Apple Cash');
+  const [showCustomNote, setShowCustomNote] = useState(false);
   const amt = parseFloat(amount);
   const canSubmit = !isNaN(amt) && amt > 0 && amt <= currentBalance;
   const NOTE_PICKS = ['Apple Cash', 'Purchased by Parent'];
 
   return (
     <ModalShell onClose={onClose} title={`Pay ${kid.name}`}>
-      <div className="space-y-4">
-        <div className="bg-emerald-50 rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-3xl" style={{ background: kid.color + '20' }}>{kid.avatar}</div>
-          <div className="flex-1">
-            <div className="text-xs font-bold text-stone-500 uppercase">Unpaid balance</div>
+      <div className="space-y-3">
+        {/* Compact balance + avatar header */}
+        <div className="bg-emerald-50 rounded-2xl p-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center text-2xl flex-shrink-0" style={{ background: kid.color + '30' }}>{kid.avatar}</div>
+          <div className="flex-1 flex items-baseline gap-2">
             <div className="display-font text-2xl font-black text-emerald-700">${currentBalance.toFixed(2)}</div>
+            <div className="text-xs font-bold text-stone-700 uppercase">unpaid</div>
           </div>
         </div>
 
-        <Field label="Amount to pay out">
+        {/* Amount with inline quick picks */}
+        <div>
+          <label className="text-xs font-black uppercase tracking-wider text-stone-700 mb-1.5 block">Amount</label>
           <div className="relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold">$</div>
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-700 font-black">$</div>
             <input type="number" step="0.25" min="0" max={currentBalance} value={amount} onChange={(e) => setAmount(e.target.value)} autoFocus
-                   className="w-full bg-stone-100 rounded-2xl pl-8 pr-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
+                   className="w-full bg-stone-100 border-2 border-stone-200 rounded-2xl pl-8 pr-4 py-3 font-bold text-stone-900 outline-none focus:ring-4 focus:ring-amber-300 focus:border-amber-400" />
           </div>
-          <div className="flex gap-2 mt-2">
+          <div className="flex gap-2 mt-1.5">
             <button type="button" onClick={() => setAmount(currentBalance.toFixed(2))}
-                    className="flex-1 py-2 rounded-xl bg-emerald-100 text-emerald-800 text-xs font-black hover:bg-emerald-200 transition">
-              Pay all ${currentBalance.toFixed(2)}
+                    className="flex-1 py-1.5 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-black transition">
+              All ${currentBalance.toFixed(2)}
             </button>
             <button type="button" onClick={() => setAmount((currentBalance / 2).toFixed(2))}
-                    className="flex-1 py-2 rounded-xl bg-stone-100 text-stone-700 text-xs font-black hover:bg-stone-200 transition">
-              Half
+                    className="flex-1 py-1.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-800 text-xs font-black transition">
+              Half ${(currentBalance / 2).toFixed(2)}
             </button>
           </div>
-        </Field>
+        </div>
 
-        <Field label="Payment method">
-          <div className="flex gap-2 mb-2">
+        {/* Payment method */}
+        <div>
+          <label className="text-xs font-black uppercase tracking-wider text-stone-700 mb-1.5 block">Payment method</label>
+          <div className="flex gap-2">
             {NOTE_PICKS.map(pick => (
-              <button key={pick} type="button" onClick={() => setNote(pick)}
-                className={`flex-1 py-2 rounded-xl text-xs font-black transition ${note === pick ? 'bg-emerald-500 text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200'}`}>
+              <button key={pick} type="button" onClick={() => { setNote(pick); setShowCustomNote(false); }}
+                className={`flex-1 py-2.5 rounded-xl text-xs font-black transition ${note === pick && !showCustomNote ? 'bg-emerald-600 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
                 {pick}
               </button>
             ))}
+            <button type="button" onClick={() => { setShowCustomNote(true); setNote(''); }}
+              className={`px-3 py-2.5 rounded-xl text-xs font-black transition ${showCustomNote ? 'bg-emerald-600 text-white' : 'bg-stone-200 text-stone-800 hover:bg-stone-300'}`}>
+              Other
+            </button>
           </div>
-          <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Or type a custom note"
-                 className="w-full bg-stone-100 rounded-2xl px-4 py-3 font-semibold outline-none focus:ring-4 focus:ring-amber-300" />
-        </Field>
-
-        {!isNaN(amt) && amt > 0 && amt <= currentBalance && (
-          <div className="bg-stone-50 rounded-2xl p-3 text-xs font-bold text-stone-600">
-            After payout: <span className="text-stone-900">${(currentBalance - amt).toFixed(2)}</span> will remain in {kid.name}'s balance.
-          </div>
-        )}
+          {showCustomNote && (
+            <input type="text" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Custom note" autoFocus
+                   className="w-full mt-2 bg-stone-100 border-2 border-stone-200 rounded-2xl px-4 py-2.5 text-sm font-bold text-stone-900 outline-none focus:ring-4 focus:ring-amber-300 focus:border-amber-400" />
+          )}
+        </div>
 
         <button disabled={!canSubmit} onClick={() => onConfirm(amt, note)}
-                className="w-full py-3 rounded-2xl font-black bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-200 disabled:text-stone-400 text-white transition shadow-lg shadow-emerald-200 disabled:shadow-none">
+                className="w-full py-3 rounded-2xl font-black bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-200 disabled:text-stone-500 text-white transition shadow-lg shadow-emerald-200 disabled:shadow-none">
           Pay out ${!isNaN(amt) ? amt.toFixed(2) : '0.00'}
         </button>
       </div>
