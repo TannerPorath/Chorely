@@ -1,0 +1,12 @@
+services:
+  chorely:
+    build: .
+    image: chorely:latest
+    container_name: chorely
+    restart: unless-stopped
+    ports:
+      - "3100:3000"   # host 3100 -> container 3000 (kasm already uses 3000)
+    volumes:
+      - /mnt/user/appdata/chorely:/data
+    environment:
+      - TZ=America/Chicago
