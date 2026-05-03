@@ -1,41 +1,60 @@
-# syntax=docker/dockerfile:1
+# ============================================================
+# Stage 1: Build the frontend
+# ============================================================
+FROM node:20-alpine AS frontend-build
 
-# ===== Stage 1: Build the frontend =====
-FROM node:20-alpine AS frontend-builder
-WORKDIR /build
-COPY frontend/package.json ./
-RUN npm install
+WORKDIR /build/frontend
+
+# Install frontend deps
+COPY frontend/package.json frontend/package-lock.json* ./
+RUN npm install --no-audit --no-fund
+
+# Copy source and build
 COPY frontend/ ./
 RUN npm run build
 
-# ===== Stage 2: Install backend deps =====
-FROM node:20-alpine AS backend-deps
-WORKDIR /build
-# build tools for better-sqlite3 native compile
-RUN apk add --no-cache python3 make g++
-COPY backend/package.json ./
-RUN npm install --omit=dev
+# ============================================================
+# Stage 2: Build the backend (with native modules compiled)
+# ============================================================
+FROM node:20-alpine AS backend-build
 
-# ===== Stage 3: Final runtime image =====
+# Install build tools needed for better-sqlite3 native compilation
+RUN apk add --no-cache python3 make g++ sqlite
+
+WORKDIR /build/backend
+
+COPY backend/package.json backend/package-lock.json* ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+COPY backend/ ./
+
+# ============================================================
+# Stage 3: Final runtime image
+# ============================================================
 FROM node:20-alpine
+
+# sqlite for occasional CLI inspection (optional, small)
+RUN apk add --no-cache sqlite
+
 WORKDIR /app
 
-# Copy backend
-COPY backend/ ./
-COPY --from=backend-deps /build/node_modules ./node_modules
+# Copy backend with its installed node_modules
+COPY --from=backend-build /build/backend ./
 
-# Copy built frontend into backend's /public so Express can serve it
-COPY --from=frontend-builder /build/dist ./public
+# Copy built frontend assets to be served by Express
+COPY --from=frontend-build /build/frontend/dist ./public
 
-# Data directory for SQLite (mount a volume here on Unraid)
+# Data directory is mounted as a volume
 RUN mkdir -p /data
-ENV DATA_DIR=/data
-ENV PORT=3000
+ENV DB_PATH=/data/chorely.db
 ENV NODE_ENV=production
+ENV PORT=3000
+ENV FRONTEND_DIR=/app/public
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+# Healthcheck — uses node (no wget/curl needed)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 CMD ["node", "server.js"]
