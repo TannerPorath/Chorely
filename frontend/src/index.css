@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    background: #FAFAF9;
+    font-family: 'Nunito', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1C1917;
+  }
+  body {
+    overscroll-behavior-y: none;
+  }
+  /* Disable input zoom on iOS */
+  input, select, textarea {
+    font-size: 16px;
+  }
+}
+
+@layer utilities {
+  .display-font {
+    font-family: 'Fraunces', serif;
+    font-feature-settings: 'ss01';
+  }
+}
+
+/* ============ Animations ============ */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes float-in {
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.9); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+@keyframes check-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.fade-in { animation: fade-in 0.3s ease-out both; }
+.slide-up { animation: slide-up 0.4s ease-out both; }
+.float-in { animation: float-in 0.5s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.pop-in { animation: pop-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+.shake { animation: shake 0.4s ease-in-out; }
+.check-pop { animation: check-pop 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+/* iOS PWA: prevent overscroll bounce showing nav */
+@supports (-webkit-touch-callout: none) {
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  #root {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
