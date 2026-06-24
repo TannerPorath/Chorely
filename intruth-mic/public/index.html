@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <title>InTruth</title>
+
+  <!-- iOS standalone web app -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="InTruth" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="manifest" href="manifest.webmanifest" />
+
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <div id="app">
+    <div id="header">
+      <span class="brand"><span class="logo">⬡</span>InTruth<span class="live-dot" id="liveDot"></span></span>
+      <div class="header-actions">
+        <button class="icon-btn" id="exportBtn" title="Export session">↓</button>
+        <button class="icon-btn" id="settingsBtn" title="Settings">⚙</button>
+      </div>
+    </div>
+
+    <div id="statusbar"><span id="statusText">Tap the mic to start listening</span><span class="ctx" id="ctxLabel"></span></div>
+
+    <div id="body">
+      <div id="transcript-section">
+        <div class="section-header">
+          <span class="section-label">Transcript</span>
+          <button class="toggle-btn" id="transcriptToggle">▾</button>
+        </div>
+        <div id="transcript-feed"></div>
+        <p id="interim"></p>
+      </div>
+
+      <div id="claims-section">
+        <div class="section-header"><span class="section-label">Claims</span></div>
+        <ul id="claim-feed"></ul>
+      </div>
+
+      <div id="verdicts-section">
+        <div class="section-header">
+          <span class="section-label">Verdicts</span>
+          <div id="speaker-editor"></div>
+        </div>
+        <div id="verdicts"><p class="empty">Verdicts will appear here…</p></div>
+      </div>
+    </div>
+
+    <div id="errors"></div>
+
+    <div id="footer">
+      <button id="mic-btn"><span class="mic-glyph">🎙</span><span id="micLabel">Start Fact-Checking</span></button>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="modal-backdrop" id="settingsModal">
+    <div class="modal">
+      <h2>Settings</h2>
+      <p class="sub">Keys are stored on the server, not on your phone. You can also set them with the <code>DEEPGRAM_API_KEY</code>, <code>ANTHROPIC_API_KEY</code> and <code>SERPER_API_KEY</code> environment variables.</p>
+
+      <div class="field">
+        <label>Context <span id="ctxState"></span></label>
+        <input id="contextInput" type="text" placeholder='e.g. "Debate: Harris vs Trump"' autocomplete="off" />
+        <span class="hint">Optional. Helps attribute claims to the right speaker.</span>
+      </div>
+      <div class="field">
+        <label>Deepgram API Key <span class="ok" id="dgState"></span></label>
+        <input id="deepgramInput" type="password" placeholder="Required — transcription" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Anthropic API Key <span class="ok" id="anState"></span></label>
+        <input id="anthropicInput" type="password" placeholder="Required — fact-checking" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Serper API Key <span class="ok" id="seState"></span></label>
+        <input id="serperInput" type="password" placeholder="Optional — web grounding" autocomplete="off" />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-secondary" id="settingsCancel">Close</button>
+        <button class="btn-primary" id="settingsSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

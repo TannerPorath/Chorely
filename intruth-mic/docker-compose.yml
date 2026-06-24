@@ -1,0 +1,14 @@
+services:
+  intruth-mic:
+    build: .
+    image: intruth-mic:latest
+    container_name: intruth-mic
+    restart: unless-stopped
+    ports:
+      - "3200:3000"   # host 3200 -> container 3000
+    environment:
+      - TZ=America/Chicago
+      # Provide your keys here (or via a .env file / the in-app Settings panel)
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
